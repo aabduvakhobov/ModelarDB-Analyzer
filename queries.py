@@ -23,10 +23,13 @@ Swing_data_points integer,
 Gorilla_data_points integer,
 PMC_segments integer,
 Swing_segments integer,
-Gorilla_segments integer
+Gorilla_segments integer,
+Actual_error integer
 );"""
 
+
 DROP_TABLE_SEGMENT_SIZE_QUERY = """DROP TABLE IF EXISTS segment_size;"""
+
 
 DROP_TABLE_FILE_SIZE_QUERY = """DROP TABLE IF EXISTS file_size;"""
 
@@ -36,6 +39,7 @@ INSERT INTO segment_size (id, Signal, Error_bound, PMC_data_points, Swing_data_p
 Gorilla_data_points, PMC_segments, Swing_segments, Gorilla_segments)
 VALUES (?,?,?,?,?,?,?,?,?);
 """
+
 INSERT_FILE_SIZE_QUERY = """
 INSERT INTO file_size (id, original_size, compressed_size_0, expected_0, compressed_size_1, expected_1,
  compressed_size_5, expected_5, compressed_size_10, expected_10)

@@ -48,12 +48,17 @@ class OutputParser:
     def parse_segment_size(self):
         output_list = []
         counter = 0
+        # iterate over error bounds set
         for error in self.error_bound.split(" "):
+            # open the file
             with open(self.output_path + f"/output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
+                print(lines)
                 # declare every param in a variable
                 # cleaned = [re.search("{(.*)}", s).group(1) for s in re.findall("Sources:\s+{.+}", lines)]
+                # find the data source name
                 signal = re.findall("Sources:\s+{(.+)}", lines)
+                # get the whole line and fetch the number out of it, also there might not be anything
                 pmc_segments = re.findall("PMC_MeanModelType \| Count:\s+([0-9]+)", lines)
                 swing_segments = re.findall("SwingFilterModelType \| Count:\s+([0-9]+)", lines)
                 gorilla_segments = re.findall("FacebookGorillaModelType \| Count:\s+([0-9]+)", lines)
@@ -70,7 +75,7 @@ class OutputParser:
                     # print(f"Error bound: {error}: length: ", len(i))
                 # print("segment contents: ", swing_segments)
 
-                # now create insert friendly list of tuples
+                # now create list of tuples in accordance with data tables
                 for i in range(len(signal)):
                     output_list.append((counter+i, signal[i], error, pmc_data_points[i], swing_data_points[i], gorilla_data_points[i],
                                         pmc_segments[i], swing_segments[i], gorilla_segments[i]))

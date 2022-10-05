@@ -1,3 +1,10 @@
 .idea
 /target
 /project
+/_*
+schema.ods
+/Verifier/target
+/Verifier/.*
+/Verifier/project/project
+/Verifier/project/target
+/__pycache__

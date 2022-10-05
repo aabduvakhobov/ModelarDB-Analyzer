@@ -9,7 +9,7 @@ CORRS=(0.0)
 DB=parquet
 #DB=h2
 
-CONF_PATH=$HOME
+CONF_PATH=$3
 
 DB_PATH=$HOME/ModelarDB-Home/tempDBs
 
