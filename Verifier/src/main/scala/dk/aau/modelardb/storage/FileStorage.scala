@@ -149,10 +149,7 @@ abstract class FileStorage(var rootFolder: String) extends Storage with H2Storag
   }
 
   override final def getSegmentGroups(sparkSession: SparkSession, filters: Array[Filter]): DataFrame = {
-    println("SEGMENT FP:DER PATH: " + this.segmentFolderPath)
-    println("ROOT FOLDER: " + this.rootFolder)
     val segmentGroupFilesAndFolders = this.listFilesAndFolders(this.segmentFolderPath)
-    segmentGroupFilesAndFolders.foreach(println)
     val df = readSegmentGroupsFolders(sparkSession, filters, segmentGroupFilesAndFolders)
     this.lockSegmentGroupFilesAndFolders(segmentGroupFilesAndFolders.asInstanceOf[mutable.ArrayBuffer[Object]], df)
     df

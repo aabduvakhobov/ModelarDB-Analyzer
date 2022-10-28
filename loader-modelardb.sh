@@ -13,9 +13,11 @@ CONF_PATH=$3
 
 DB_PATH=$HOME/ModelarDB-Home/tempDBs
 
-COPY_DB_PATH=$DB_PATH/Ingested
+COPY_DB_PATH=$DB_PATH/Ingested/
 
 MODELARDB_PATH=$1
+
+VERIFIER_PATH=$HOME/ModelarDB-Home/EvaluationTool/Verifier/
 
 # also include OUTPUT_PATH
 if [[ $DB == cassandra ]]
@@ -92,9 +94,9 @@ function measure-database {
 	    du -d1 -h $HOME/Downloads/apache-cassandra-4.0-beta4/data/data >> $HOME/Downloads/output-"$1"-"$2"
 	    ;;
 	"h2")
-	    echo >> $HOME/Downloads/output-"$1"-"$2"
-	    du $MODELARDB_PATH/modelardb.h2.mv.db >> $HOME/Downloads/output-"$1"-"$2"
-	    echo >> $HOME/Downloads/output-"$1"-"$2"
+	    #echo >> $HOME/Downloads/output-"$1"-"$2"
+	    # du $MODELARDB_PATH/modelardb.h2.mv.db >> $HOME/Downloads/output-"$1"-"$2"
+	    # echo >> $HOME/Downloads/output-"$1"-"$2"
 	    final_size=$(du $MODELARDB_PATH/modelardb.h2.mv.db)
 	    echo "final_size=$final_size" >> $HOME/Downloads/output-"$1"-"$2"
 	    ;;
@@ -130,14 +132,15 @@ function copy-database {
 	    exit 0
 	    ;;
     esac
-    mv $HOME/Downloads/output-"$1"-"$2" $COPY_DB_PATH/
+    mv $HOME/Downloads/output-"$1"-"$2" $COPY_DB_PATH
+    mv $HOME/Downloads/verifier-"$1"-"$2" $COPY_DB_PATH
 }
 
 # Main Function
-mkdir "$COPY_DB_PATH"
 cd $1
 for c in "${CORRS[@]}"
 do
+    # shellcheck disable=SC2068
     for e in ${ERROR[@]}
     do
       # Reset the database
@@ -151,13 +154,15 @@ do
       sed -i -e "s/(correlation)/$c/g" $CONF_PATH/.modelardb.conf
 
       # Ingest the data set with the correlation specified in corrs
-      echo "Ingesting Dataset with: $c"
+      echo "Ingesting Dataset with: $e"
       SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt run | tee $HOME/Downloads/output-"$e"-"$c"
       #echo 'dk.aau.modelardb.Main.main(Array())' | ~/Programs/spark-3.1.1-bin-hadoop3.2/bin/spark-shell --driver-memory $MEMORY --executor-memory $MEMORY --packages com.datastax.spark:spark-cassandra-connector_2.12:3.0.1 --jars ModelarDB-assembly-1.0.0.jar | tee $HOME/Downloads/output-"$e"-"$c"
-
+      # cd to verifier and tee the result and cd back to modelardb home
+      cd $VERIFIER_PATH
+      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $HOME $MODELARDB_PATH" | tee $HOME/Downloads/verifier-"$e"-"$c"
+      cd $1
       # Measure the amount of data stored in the database
       measure-database "$e" "$c"
-
       # Copy the database so the ingested data can be used
       copy-database "$e" "$c"
     done

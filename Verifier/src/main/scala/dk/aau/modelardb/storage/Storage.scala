@@ -28,6 +28,18 @@ abstract class Storage {
   def getMaxGid: Int
   def close(): Unit
 
+  def getSourceGroupCache: Array[Int] = {
+    this.timeSeriesGroupCache
+  }
+
+  def getModelCache: Array[ModelType] = {
+    this.modelTypeCache
+  }
+
+  def getGroupMetadataCache: Array[Array[Int]] = {
+    this.groupMetadataCache
+  }
+
   def storeMetadataAndInitializeCaches(configuration: Configuration, timeSeriesGroups: Array[TimeSeriesGroup]): Unit = {
 
     //The Dimensions object is stored so the schema can be retrieved later
@@ -160,7 +172,7 @@ abstract class Storage {
 
   /** Protected Methods * */
   protected def storeTimeSeries(timeSeriesGroups: Array[TimeSeriesGroup]): Unit
-  protected def getTimeSeries: mutable.HashMap[Integer, Array[AnyRef]]
+  def getTimeSeries: mutable.HashMap[Integer, Array[AnyRef]]
   protected def storeModelTypes(modelsToInsert: mutable.HashMap[String, Integer]): Unit
   protected def getModelTypes: mutable.HashMap[String, Integer]
 

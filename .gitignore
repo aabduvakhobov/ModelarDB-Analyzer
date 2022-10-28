@@ -7,4 +7,8 @@ schema.ods
 /Verifier/.*
 /Verifier/project/project
 /Verifier/project/target
-/__pycache__
+/__*
+EvaluationTool.drawio.png
+/*.odt
+/requirements.txt
+output.db

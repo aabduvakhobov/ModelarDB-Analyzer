@@ -7,9 +7,9 @@ class MyDB:
     def __init__(
             self,
             db_file,
-            create_table_sql=[queries.CREATE_FILE_SIZE_TABLE_SQL, queries.CREATE_SEGMENT_SIZE_TABLE_SQL],
-            delete_table_sql=[queries.DROP_TABLE_SEGMENT_SIZE_QUERY, queries.DROP_TABLE_FILE_SIZE_QUERY],
-            insert_query=[queries.INSERT_FILE_SIZE_QUERY, queries.INSERT_SEGMENT_SIZE_QUERY]
+            create_table_sql=[queries.CREATE_FILE_SIZE_TABLE_SQL, queries.CREATE_SEGMENT_SIZE_TABLE_SQL, queries.CREATE_ERROR_TABLE_SQL],
+            delete_table_sql=[queries.DROP_TABLE_SEGMENT_SIZE_TABLE_QUERY, queries.DROP_TABLE_FILE_SIZE_TABLE_QUERY, queries.DROP_TABLE_ERROR_TABLE_QUERY],
+            insert_query=[queries.INSERT_FILE_SIZE_QUERY, queries.INSERT_SEGMENT_SIZE_QUERY, queries.INSERT_ACTUAL_ERROR_QUERY]
     ):
         self.db_file = db_file
         self.create_table_sql = create_table_sql
@@ -43,20 +43,22 @@ class MyDB:
         except Error as e:
             print(e)
 
-    def insert_metrics(self, conn, data, file_size=True):
+    def insert_metrics(self, conn, data, query):
+        # choose query from the list of insert queries
         cur = conn.cursor()
-        if file_size:
-            cur.execute(self.insert_query[0], data)
-        else:
-            cur.execute(self.insert_query[1], data)
+        cur.execute(self.insert_query[query], data)
         conn.commit()
 
-    def select_segments(self, conn):
+    def select_table(self, conn, table_name):
         cur = conn.cursor()
-        cur.execute("SELECT * FROM segment_size;")
-        print(cur.fetchall())
+        cur.execute(f"SELECT * FROM {table_name};")
+        records = cur.fetchall()
+        for row in records:
+            print(row)
 
-    def select_file_size(self, conn):
+    def run_query(self, conn, query):
         cur = conn.cursor()
-        cur.execute("SELECT * FROM file_size;")
-        print(cur.fetchall())
+        cur.execute(query)
+        records = cur.fetchall()
+        for row in records:
+            print(row)

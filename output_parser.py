@@ -2,10 +2,14 @@ import os
 import re
 
 
+
+
+
 class OutputParser:
     """
     docstring:
     """
+
     def __init__(
             self,
             data_path,
@@ -16,6 +20,7 @@ class OutputParser:
         self.output_path = output_path
         self.error_bound = error_bound
 
+    # private methods
     def __estimate_dir(self):
         # assign size
         size = 0
@@ -26,36 +31,83 @@ class OutputParser:
                 size += os.path.getsize(fp)
         return size
 
+    def __file_size_estimate(self, error):
+        # reads a file
+        # fetches the needed records: 1st and last elements of the list
+        # pattern matching for suitable types
+        # sums them up at the end
+        def object_size_estimate(obj):
+            match obj:
+                case "Short":
+                    return 2
+                case "Int" | "Float":
+                    return 4
+                case "Double" | "Long" | "BigInt":
+                    return 8
+                case _:
+                    raise "Unknown type identified" # to be fixed later on
+        with open(self.output_path + f"verifier-{error}-0.0", "r") as f:
+            # fetch only the part after EVALUATION RESULT
+            line = f.read().split("EVALUATION RESULT")[1]
+            # gets everything in the parenthesis after the file name in a list of records
+            records = re.findall(f":\s+\[\((.+)\)\]", line)
+            byte_sum = 0
+            for r in records:
+                # list contains several strings of metrics for each TS file and error bound, so they're split
+                record = r.split(",")
+                # in accordance with data type they're calculated
+                byte_sum += int(record[0]) * object_size_estimate(record[-1])
+                # pattern matching method for different variables types and their vals
+        return byte_sum
+
+    # public methods
     # maybe two separate files would be parsed separately
-    def parse_file_size(self):
+    def parse_file_size_hor(self):
         # output_list = [self.__estimate_dir()]
-        output_dict = {"original_size": self.__estimate_dir()}
-        # output_dict["original_size"]
+        # output_dict = {"original_file_size": self.__estimate_dir()}
+        output_dict = {}
         for error in self.error_bound.split(" "):
-            with open(self.output_path + f"/output-{error}-0.0", "r") as f:
+            file_size = self.__file_size_estimate(error)
+            output_dict["original_data_size"] = file_size
+            with open(self.output_path + f"output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
                 # fetch compressed size
                 compressed = int(re.findall("final_size=[0-9]*", lines)[0].split("=")[1])
                 # now expected size
                 expected = int(re.findall("Total Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2]) / 1000
 
-                output_dict[f"compressed_size_{error}"] = compressed
-                output_dict[f"expected_size_{error}"] = expected
-        # print(output_dict)
-
+                output_dict[f"compressed_size_{error}"] = int(compressed) * 1024
+                output_dict[f"expected_size_{error}"] = int(expected) * 1024
         return output_dict
+
+    def parse_file_size_ver(self):
+        output_list = []
+        counter = 0
+        for error in self.error_bound.split(" "):
+            file_size = self.__file_size_estimate(error)
+            # output_list["original_data_size"] = file_size
+            with open(self.output_path + f"output-{error}-0.0", "r") as f:
+                lines = f.read().rstrip()
+                # fetch compressed size, it comes in KB so converting to Bytes... later on
+                compressed = int(re.findall("final_size=[0-9]*", lines)[0].split("=")[1]) * 1024
+                # now expected size
+                expected = int(re.findall("Total Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
+            output_list.append((counter, error, file_size, compressed, expected))
+            counter += 1
+        return output_list
 
     def parse_segment_size(self):
         output_list = []
+        # used as a primary key in the table
         counter = 0
+        segments = {}
+        datapoints = {}
         # iterate over error bounds set
         for error in self.error_bound.split(" "):
             # open the file
-            with open(self.output_path + f"/output-{error}-0.0", "r") as f:
+            with open(self.output_path + f"output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
-                print(lines)
                 # declare every param in a variable
-                # cleaned = [re.search("{(.*)}", s).group(1) for s in re.findall("Sources:\s+{.+}", lines)]
                 # find the data source name
                 signal = re.findall("Sources:\s+{(.+)}", lines)
                 # get the whole line and fetch the number out of it, also there might not be anything
@@ -66,20 +118,71 @@ class OutputParser:
                 swing_data_points = re.findall("SwingFilterModelType \| DataPoint:\s+([0-9]+)", lines)
                 gorilla_data_points = re.findall("FacebookGorillaModelType \| DataPoint:\s+([0-9]+)", lines)
 
-                collection = (signal, pmc_segments, swing_segments, gorilla_segments, pmc_data_points,
-                              swing_data_points, gorilla_data_points)
-                for i in collection:
-                    if i == []:
-                        i.extend(["0", "0", "0", "0", "0", "0", "0", "0", "0"])
+                segments["pmc"] = pmc_segments
+                datapoints["pmc"] = pmc_data_points
+                segments["swing"] = swing_segments
+                datapoints["swing"] = swing_data_points
+                segments["gorilla"] = gorilla_segments
+                datapoints["gorilla"] = gorilla_data_points
 
-                    # print(f"Error bound: {error}: length: ", len(i))
-                # print("segment contents: ", swing_segments)
-
-                # now create list of tuples in accordance with data tables
+                # single row would look like:  id, ts, error_bound, model_type, segment
                 for i in range(len(signal)):
-                    output_list.append((counter+i, signal[i], error, pmc_data_points[i], swing_data_points[i], gorilla_data_points[i],
-                                        pmc_segments[i], swing_segments[i], gorilla_segments[i]))
-                counter += i+1
+                    for model in ["pmc", "swing", "gorilla"]:
+                        output_list.append(
+                            # now create collection of tuples in accordance with data tables
+                            (
+                                counter, signal[i], error, model, datapoints[model][i], segments[model][i]
+                            )
+                        )
+                        counter += 1
+
         # print(output_list)
         return output_list
 
+    # parses verifier... logs for error table
+    def parse_errors(self):
+        output_list = []
+        # used as a primary key in the table
+        counter = 0
+        # iterate over error bounds set
+        for error in self.error_bound.split(" "):
+            # open the file
+            with open(self.output_path + f"verifier-{error}-0.0", "r") as f:
+                # fetch only the part after EVALUATION RESULT
+                line = f.read().split("EVALUATION RESULT:")[1].split("[success]")[0].strip()
+                # print(line)
+                # gets everything in the parenthesis after the file name in a list of records
+                ts = re.findall("(.+):", line)
+                ts = [i for i in ts if i != []]
+                metrics = {}
+                records = re.findall(f":\s+\[\((.+)\)\]", line)
+                # parse through the ts names
+                for ts_1 in ts:
+                    metrics[ts_1] = re.findall(f"{ts_1}:\s+\[\((.+)\)\]", line)[0].split(",")
+                    # now create collection of tuples in accordance with data tables
+                    # the structure of a single row: (id, ts, error_bound, avg_error, max_error, diff_cnt, cnt)
+                    output_list.append(
+                        (counter, ts_1, error, metrics[ts_1][1], metrics[ts_1][2], metrics[ts_1][3], metrics[ts_1][0])
+                    )
+                    counter += 1
+        # print(output_list)
+
+            # with open(self.output_path + f"verifier-{error}-0.0", "r") as f:
+            #     lines = f.read().rstrip()
+            #     metrics = {}
+            #     # parse through the name of the time series file and store them in the dict
+            #     for s in signal:
+            #         metrics[s] = re.findall(f"{s}:\s+\[\((.+)\)\]", lines)[0].split(",")
+            #         # print(f"Current Error: {error}, Signal: {s}, Metrics: {metrics[s]}")
+            #
+            #     for i in range(len(signal)):
+            #         output_list.append(
+            #             # now create collection of tuples in accordance with data tables
+            #             (
+            #                 counter + i, signal[i], error, pmc_data_points[i], swing_data_points[i],
+            #                 gorilla_data_points[i], pmc_segments[i], swing_segments[i], gorilla_segments[i],
+            #                 metrics[signal[i]][1], metrics[signal[i]][2], metrics[signal[i]][3]
+            #             )
+            #         )
+        # print(output_list)
+        return output_list

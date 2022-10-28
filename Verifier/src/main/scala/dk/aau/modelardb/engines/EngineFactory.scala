@@ -14,13 +14,24 @@
  */
 package dk.aau.modelardb.engines
 
-import dk.aau.modelardb.core.{Configuration, Partitioner, SegmentGroup}
-import dk.aau.modelardb.storage.Storage
+import dk.aau.modelardb.core.timeseries.TimeSeries
+import dk.aau.modelardb.core.{Configuration, Dimensions, Partitioner, SegmentGroup}
+import dk.aau.modelardb.engines.h2.H2Storage
+import dk.aau.modelardb.engines.spark.SparkStorage
+import dk.aau.modelardb.storage.{CassandraStorage, FileStorage, JDBCStorage, Storage}
 
 import scala.collection.mutable
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{col, unix_timestamp}
-import org.h2.table.TableFilter
+import org.eclipse.jetty.websocket.common.SessionFactory
+import org.h2.command.dml.{Query, Select}
+import org.h2.engine.{ConnectionInfo, Database, Session, User}
+import org.h2.table.{ColumnResolver, Table, TableFilter}
+
+import java.awt.Dimension
+import java.sql.DriverManager
+import scala.runtime.Nothing$
+
 
 object EngineFactory {
 
@@ -31,134 +42,181 @@ object EngineFactory {
 
   private def verifier(configuration: Configuration, storage: Storage) = {
 
-
-    if ( ! storage.isInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]) {
-      throw new UnsupportedOperationException("CORE: verification is only supported for SparkStorage")
-    }
-
-
     //Setup a Spark Session for connecting with the database
 // TODO: case matching for storage type based on config file
-    val sparkStorage = storage.asInstanceOf[dk.aau.modelardb.storage.ParquetStorage]
-
+    val configStorage = configuration.getStorage.split(":")(0).trim
+    println(configStorage)
+    val storageMedium =
+      configStorage match {
+        case "parquet" => storage.asInstanceOf[dk.aau.modelardb.storage.ParquetStorage]
+        case "orc" => storage.asInstanceOf[dk.aau.modelardb.storage.ORCStorage]
+        case "cassandra" => storage.asInstanceOf[dk.aau.modelardb.storage.CassandraStorage]
+        case "jdbc" => storage.asInstanceOf[dk.aau.modelardb.storage.JDBCStorage]
+        case _ => throw new UnsupportedOperationException("CORE: Storage medium is not supported")
+    }
+//    val engine = configuration.getString("moderlardb.engine")
 //    sparkStorage.rootFolder = "/home/abduvoris/ModelarDB-Home/ModelarDB-dev/ModelarDB/modelardb/"
 
     val engine = configuration.getString("modelardb.engine")
-
-
     //    val master = if (engine == "spark") "local[*]" else engine
+    storage.storeMetadataAndInitializeCaches(configuration, Array())
+    //-------------------------------------------------
+    //variables for storing errors
+    val metrics = verifyError(storage, configuration) // pattern matching over here to choose engine type
+    val message = new StringBuilder("EVALUATION RESULT:")
+    // iterate over the map and print out as: TS: [metric1, metric2, ...]
+    metrics.foreach(m => message ++= s"\n${m._1}: [${m._2}]")
+    println(message)
+  }
+
+
+  def verifyError(storage: Storage, configuration: Configuration): mutable.Map[String, (BigInt, Double, Double, Double, Double, String)] = {
+    if ( ! storage.isInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]) {
+      throw new UnsupportedOperationException("CORE: verification is only supported for SparkStorage")
+      }
+    val sparkStorage = storage.asInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]
+    //Detects the current data set used (EH / EP)
     val master = "local[*]"
     val ssb = SparkSession.builder.master(master)
 
     val dimensions = configuration.getDimensions
-    val spark = sparkStorage.open(ssb, dimensions)
-    println("EVALUATION TOOL: -------------- MAX TID: " + sparkStorage.getMaxTid)
 
-    sparkStorage.storeMetadataAndInitializeCaches(configuration, Array())
-
-    var segmentGroupsDF = sparkStorage.getSegmentGroups(spark, Array()).orderBy("gid", "start_time")
-
-    //-----------------------------------------
-    val tidToGid = mutable.HashMap[Integer, Integer]()
-    val timeSeriesMap = sparkStorage.getTimeSeries
-    println("EVALUATION TOOL: Time Series HashMap: " + timeSeriesMap.size)
-
-    for ((tid, metadata) <- timeSeriesMap) {
-      val tsg = metadata(2).asInstanceOf[Int]
-      tidToGid(tid) = tsg
-      println(tid + " " + " GID: "+ tsg)
-    }
+    val tidToGid = tidToGidMapper(storage)
 
     //---------------------------------------------
-    val timeSeries = Partitioner.initializeTimeSeries(configuration, tidToGid.keys.min)
-    println("EVALUATION TOOL: ------ SOURCE: ")
-    timeSeries.foreach(x => println(x.source))
+    val timeSeries = Partitioner.initializeTimeSeries(configuration, tidToGid.keys.min-1)
 
-    println("Printing dims: ================================== "+ sparkStorage.dimensions)
-
-//    var segmentGroupsDF = sparkStorage.getSegmentGroups(spark, Array()).orderBy("gid", "start_time")
-    println("----------------------------------Now Show is diplayed--------------------------------------------------")
-    segmentGroupsDF.printSchema()
-
-    segmentGroupsDF = segmentGroupsDF
-//      .withColumn("start_time_unix", unix_timestamp(col("start_time")))
-      .withColumn("start_time", col("start_time").cast("long") * 1000)
-
-    segmentGroupsDF = segmentGroupsDF
-      .withColumn("end_time", unix_timestamp(col("end_time"))*1000)
-//      .withColumn("end_time", (col("end_time")/1000).cast("long"))
-    segmentGroupsDF.show(5)
-
-    println(s"---------------Length of TS array: ${timeSeries.length}")
-
-    println(s"----------------Length of TS iterator${timeSeries.iterator.length}")
-
-
-    //Create variables for storing errors
-    var differenceSum: Double = 0D
-    var differenceTotal: Double = 0D
-    var differenceCount = 0L
-    var maxError = Float.MinValue
-
+    //Foreach sid verify that all data points are within the error bound and compute the average error
+    var differenceSum: Double = 0.0
+    var differenceTotal: Double = 0
+    var differenceCount: Long = 0
+//    val dataSetPath = System.getProperty("user.home") + "/Data/" + dataSetName + "/"
+    //val dataSetPath = "/user/cs.aau.dk/skj/home/Data/" + dataSetName + "/"
+    val gsc = storage.getSourceGroupCache
     val error = configuration.getErrorBound
-//     filter sparkDF with tid over iteration
-    for (timeSeries_id <- tidToGid.toSeq.sortBy(_._2)) {
-      println(s"EVALUATION TOOL: CURRENT TID: --------------------- ${timeSeries_id._2}")
-      val ts = timeSeries(timeSeries_id._2-1)
+    val errors = Array.fill[Long](11)(0L)
+    val nans = mutable.ArrayBuffer[String]()
+    val mc = storage.getModelCache
+    val modelsSegment = Array.fill[Long](mc.length)(0L)
+    val modelsDataPoint = Array.fill[Long](mc.length)(0L)
+
+    var generalCount: Long = 0
+    var maxError = Double.MinValue
+    var dataType: String = null
+
+    //Method for converting a Spark segment group row into a segment for the current sid
+    import org.apache.spark.sql.Row
+
+    val gmdc = storage.getGroupMetadataCache
+
+    val rts = (row: Row, sid: Int) => {
+      val model = mc(row.getInt(3))
+      //Sampling interval
+      val resolution = gmdc(row.getInt(0))(0)
+
+      val exploded = new SegmentGroup(row.getInt(0), row.getTimestamp(1).getTime, row.getTimestamp(2).getTime,
+        row.getInt(3), row.getAs[Array[Byte]](4), row.getAs[Array[Byte]](5)).explode(gmdc, storage.groupDerivedCache)
+
+      exploded.filter(_.gid == sid).map(e => model.get(e.gid, e.startTime, e.endTime, resolution, e.model, e.offsets))
+    }
+    val spark = sparkStorage.open(ssb, dimensions)
+    val maxSid = storage.getMaxTid
+//    val rows = sparkStorage.getSegmentGroups(spark, Array(org.apache.spark.sql.sources.EqualTo("gid", gsc(maxSid)))).collect()
+//    var generalCount: Long = 0
+    val metricsMap = mutable.Map.empty[String, (BigInt, Double, Double, Double, Double, String)]
+//    Verify each data point
+    var tid = 0
+    while (tid < maxSid) {
+      // timeSeries array starts with 0 index, so it comes before tid+=1
+      val ts = timeSeries(tid) // this might a problem a later on when grouping is implemented during ingestion
       ts.open()
-      println("EVALUATION TOOL: CURRENT TID SOURCE: " + ts.source)
-      val segmentGroup = segmentGroupsDF.filter(s"gid == ${timeSeries_id._2}")
-      segmentGroup.show(5)
-      val segmentItr = segmentGroup.rdd.toLocalIterator
-      while (segmentItr.hasNext) {
-        val row = segmentItr.next()
-        val segmentGroup = new SegmentGroup(row(0).asInstanceOf[java.lang.Integer], row(1).asInstanceOf[java.lang.Long],
-          row(2).asInstanceOf[java.lang.Long], row(3).asInstanceOf[java.lang.Integer],
-          row(4).asInstanceOf[Array[Byte]], row(5).asInstanceOf[Array[Byte]])
-        val segments = segmentGroup.toSegments(sparkStorage)
-        for (segment <- segments) {
-          val dataPoint = segment.grid().iterator()
-          while (ts.hasNext & dataPoint.hasNext) {
+      //get the correct ts file
+      tid += 1
+      val rows = sparkStorage.getSegmentGroups(spark, Array(org.apache.spark.sql.sources.EqualTo("gid", gsc(tid)))).orderBy( "start_time").collect()
+
+
+      for (row <- rows) {
+        val segment = rts(row, tid)
+        //If a gap have occurred a segment group will not represent values for all time series in the group
+        if (segment.nonEmpty) {
+          //Update the number of models in segments
+          modelsSegment(row.getInt(3)) += 1
+
+          val it = segment(0).grid().iterator()
+          while (it.hasNext && ts.hasNext) {
+//          while (it.hasNext) {
+            val a = it.next()
             val r = ts.next()
-            val a = dataPoint.next()
+            val e = dk.aau.modelardb.core.utility.Static.percentageError(a.value, r.value)
 
-            if (timeSeries_id._2 == 8 & a.tid == 8) {
-              println(s"REAL: ${r}")
-              println(s"APPROXIMATE: ${a}")
+            if ((a.tid  != r.tid) || (a.timestamp != r.timestamp) || (e > error)) {
+              throw new IllegalArgumentException(s"CORE: (A) $a and (R) $r with error $e cannot be verified")
             }
-
-            val e = r.value - a.value
-            val maxPercentageError = percentageError(r.value, a.value)
-            if ((a.timestamp != r.timestamp) || (maxError > error)){
-              throw new IllegalArgumentException(s"CORE: (A) ${a} and R $r with error $maxPercentageError cannot be verified")
+            //Update the number of models in data points
+            modelsDataPoint(row.getInt(3)) += 1
+//            Update the, hopefully empty, list of NaN values
+            if (a.value != r.value && Math.abs((r.value - a.value) / r.value).isNaN) {
+              nans.append(r + "  " + a)
             }
-
-            maxError = Math.max(maxError, maxPercentageError)
-            differenceCount += 1L
+//            Update the ceilled errors histogram
+            errors(Math.ceil(e).toInt) += 1L
+//            Updates the average error over the entire time series
+            maxError = Math.max(maxError, e)
+            if (e != 0) differenceCount += 1
             differenceSum += Math.abs(r.value - a.value)
             differenceTotal += Math.abs(r.value)
+            generalCount += 1
+            if (generalCount == 1) dataType = f(r.value)
           }
         }
       }
+//      Verifies that the approximated time series contained enough data points
+      if (ts.hasNext) {
+        throw new IllegalArgumentException(s"CORE: $differenceCount is less than the size of ${ts.source}")
+      }
 
+      val averageError = if (!(differenceSum/differenceCount).isNaN) differenceSum/differenceCount else 0D
+      metricsMap(ts.source) = (generalCount, averageError, maxError, differenceCount, differenceSum, dataType)
     }
-    val message = new StringBuilder("EVALUATION RESULT:")
-    message ++= s"\nMaximum real error bound $maxError"
-    message ++= s"\nGeneral Count: $differenceCount"
-    message ++= s"\nDifference Total: $differenceTotal"
-    println(message)
-
-
-    // you collect here everything and then map it to SegmentGroup class Array
-    // and then array is iterated to get each particular segment out of it
-
+    metricsMap
   }
 
-  private def percentageError(r: Float, a: Float) : Float = {
-    val error = Math.abs((a - r) / r)
-    error * 100
-    val filter =
 
+  def tidToGidMapper(storage: Storage): mutable.HashMap[Integer, Integer] = {
+    val tidToGid = mutable.HashMap[Integer, Integer]()
+    val timeSeriesMap =  storage.getTimeSeries
+    for ((tid, metadata) <- timeSeriesMap) {
+      val tsg = metadata(2).asInstanceOf[Int]
+      tidToGid(tid) = tsg
+    }
+    tidToGid
   }
+
+  def f[T](v:T) = v match {
+    case _: Int => "Int"
+    case _: Double => "Double"
+    case _: Float => "Float"
+    case _: Long => "Long"
+    case _: Short => "Short"
+    case _: BigInt => "BigInt"
+    case _ => v.getClass.getName
+  }
+
+
+//  def h2Engine(storage: Storage, timeSeries: Array[TimeSeries], configuration: Configuration): Unit = {
+//    val h2Storage = storage.asInstanceOf[dk.aau.modelardb.engines.h2.H2Storage]
+//
+////    val query: Query = new Select( new Session(db, new User(db, 0, "sa", true), 1))
+////    val tableFilter = query.asInstanceOf[Select].getTopTableFilter()
+//    Select select = new Select()
+//    val segmentGroups = h2Storage.getSegmentGroups(TableFilter.TableFilterVisitor)
+//    for (sg <- segmentGroups) {
+//      val sgs = sg.toSegments(storage)
+//      for (s <- sgs) {
+//        println("Printing TIDs------------------------------------------------")
+//        println(s.tid)
+//      }
+//    }
+//  }
 
 }

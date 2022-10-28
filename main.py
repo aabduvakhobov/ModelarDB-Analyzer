@@ -10,45 +10,59 @@ from output_parser import OutputParser
 # TODO: go one level up and consider multiple databases
 # TODO: create a list of parameters to iterate from
 # creates sqlite database to store fetched data
-MODELARDB_PATH = "$HOME/ModelarDB-Home/ModelarDB-dev/ModelarDB"
-ERROR_BOUND = "0 1 5"
-OUTPUT_PATH = "$HOME/ModelarDB-Home/tempDBs/Ingested"
-DATA_PATH ="$HOME/ModelarDB-Home/ModelarDB/data/low_freq/processed"
-CONF_PATH = "$HOME/.modelardb.conf"
+HOME = "/home/abduvoris"
+MODELARDB_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-dev/ModelarDB/"
+ERROR_BOUND = "5 10"
+OUTPUT_PATH = f"{HOME}/ModelarDB-Home/tempDBs/Ingested/"
+DATA_PATH = f"{HOME}/ModelarDB-Home/ModelarDB/data/low_freq/processed"
+CONF_PATH = f"{HOME}"
 
 
 
-def run_script(MODELARDB_PATH):
+def run_script(MODELARDB_PATH, ERROR_BOUND, CONF_PATH):
     # also need to pass in output_path
     subprocess.run(["bash", "loader-modelardb.sh", f"{MODELARDB_PATH}", f"{ERROR_BOUND}", f"{CONF_PATH}"])
 
 
 if __name__ == '__main__':
 
-    # db = MyDB("./output.db")
-    #
-    # conn = db.create_connection()
-    # db.create_table(conn, delete=True)
-    # db.create_table(conn)
+    db = MyDB("./output.db")
+    conn = db.create_connection()
+    db.create_table(conn, delete=True)
+    db.create_table(conn)
 
     # iterate over bunch of files. use regex to get required elements and write them to db
-
-
-    run_script(MODELARDB_PATH)
+    run_script(MODELARDB_PATH, ERROR_BOUND, CONF_PATH)
 
     parser = OutputParser(DATA_PATH, OUTPUT_PATH, ERROR_BOUND)
-    output_list = parser.parse_segment_size()
-    print(output_list)
-    # file_size_dict = parser.parse_file_size()
-    # print(file_size_dict.values())
-    # now insert data to db
+    # file_size_dict_hor = parser.parse_file_size_hor()
 
-    # for data in output_list:
-    #     db.insert_metrics(conn, data, file_size=False)
+    file_size_list = parser.parse_file_size_ver()
+    # print(f"FILE SIZE VERTICAL: \n{file_size_dict_ver}")
 
-    # print(file_size_dict)
+    segments_output_list = parser.parse_segment_size()
+    # print(f"SEGMENT SIZE: \n{segments_output_list}")
 
-    # db.insert_metrics(conn, [0] + list(file_size_dict.values()))
-    # print(db.select_segments(conn))
-    # print(db.select_file_size(conn))
-    # conn.close()
+    errors_output_list = parser.parse_errors()
+    #
+    # # now insert data to db
+    #
+    for data in file_size_list:
+        db.insert_metrics(conn, data, 0)
+
+    for data in segments_output_list:
+        db.insert_metrics(conn, data, 1)
+
+    for data in errors_output_list:
+        db.insert_metrics(conn, data, 2)
+
+
+
+    db.select_table(conn, "segment_size")
+    print("File_size and actual error table: ")
+    db.select_table(conn, "file_size")
+
+    print("Error table:")
+    db.select_table(conn, "error_table")
+
+    conn.close()

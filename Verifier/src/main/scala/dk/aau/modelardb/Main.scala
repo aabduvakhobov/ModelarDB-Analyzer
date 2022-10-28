@@ -53,8 +53,8 @@ object Main {
     // (hashmap of conf parameters)
     TimeZone.setDefault(configuration.getTimeZone) //Ensures all components use the same time zone configuration
     /* Storage */
-    val homePath = "/home/abduvoris/ModelarDB-Home/ModelarDB-dev/ModelarDB/"
-    val storage = StorageFactory.getStorage(homePath, configuration.getString("modelardb.storage"))
+//    val mdbHomePath = "/home/abduvoris/ModelarDB-Home/ModelarDB-dev/ModelarDB/"
+    val storage = StorageFactory.getStorage(args(1), configuration.getString("modelardb.storage"))
     /* Engine */
     EngineFactory.startEngine(configuration, storage)
 

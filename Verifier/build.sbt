@@ -1,10 +1,8 @@
+
+
 version := "0.1.0-SNAPSHOT"
-
 scalaVersion := "2.12.15"
-
 name := "Verifier"
-
-
 
 libraryDependencies ++= Seq(
   /* Code Generation */
@@ -41,7 +39,7 @@ Compile / run := Defaults.runTask(
 
 /* Prevent Apache Spark from overwriting dependencies with older incompatible versions */
 assembly / assemblyShadeRules := Seq(
-  ShadeRule.rename("com.google.**" -> "com.google.shaded.@1").inAll,
+  ShadeRule.rename("com.google.**" -> "com.google.shaded.@1").inAll
 )
 
 /* Concat and discard duplicate metadata in the dependencies when creating an assembly */
