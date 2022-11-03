@@ -37,15 +37,14 @@ class OutputParser:
         # pattern matching for suitable types
         # sums them up at the end
         def object_size_estimate(obj):
-            match obj:
-                case "Short":
-                    return 2
-                case "Int" | "Float":
-                    return 4
-                case "Double" | "Long" | "BigInt":
-                    return 8
-                case _:
-                    raise "Unknown type identified" # to be fixed later on
+            if obj == "Short":
+                return 2
+            elif obj == "Int" or obj == "Float":
+                return 4
+            elif obj == "Double" or obj == "Long" or obj == "BigInt":
+                return 8
+            else:
+                raise TypeError("Unknown type identified")
         with open(self.output_path + f"verifier-{error}-0.0", "r") as f:
             # fetch only the part after EVALUATION RESULT
             line = f.read().split("EVALUATION RESULT")[1]
@@ -165,24 +164,4 @@ class OutputParser:
                         (counter, ts_1, error, metrics[ts_1][1], metrics[ts_1][2], metrics[ts_1][3], metrics[ts_1][0])
                     )
                     counter += 1
-        # print(output_list)
-
-            # with open(self.output_path + f"verifier-{error}-0.0", "r") as f:
-            #     lines = f.read().rstrip()
-            #     metrics = {}
-            #     # parse through the name of the time series file and store them in the dict
-            #     for s in signal:
-            #         metrics[s] = re.findall(f"{s}:\s+\[\((.+)\)\]", lines)[0].split(",")
-            #         # print(f"Current Error: {error}, Signal: {s}, Metrics: {metrics[s]}")
-            #
-            #     for i in range(len(signal)):
-            #         output_list.append(
-            #             # now create collection of tuples in accordance with data tables
-            #             (
-            #                 counter + i, signal[i], error, pmc_data_points[i], swing_data_points[i],
-            #                 gorilla_data_points[i], pmc_segments[i], swing_segments[i], gorilla_segments[i],
-            #                 metrics[signal[i]][1], metrics[signal[i]][2], metrics[signal[i]][3]
-            #             )
-            #         )
-        # print(output_list)
         return output_list

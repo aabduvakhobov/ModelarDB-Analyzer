@@ -25,7 +25,7 @@ object StorageFactory {
       } else if (connectionString.startsWith("jdbc:")) { // change current directory to home directory in connectionString: jdbc:h2:./modelardb.h2
         new JDBCStorage(connectionString)
       } else if (connectionString.startsWith("orc:")) {
-        new ORCStorage(connectionString.substring(4) + '/')
+        new ORCStorage(existingPath + connectionString.substring(4) + '/')
       } else if (connectionString.startsWith("parquet:")) {
         new ParquetStorage(existingPath + connectionString.substring(8) + '/')
       } else {

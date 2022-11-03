@@ -7,8 +7,8 @@ schema.ods
 /Verifier/.*
 /Verifier/project/project
 /Verifier/project/target
+/Verifier/modelardb
 /__*
 EvaluationTool.drawio.png
 /*.odt
-/requirements.txt
-output.db
+/output.db

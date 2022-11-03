@@ -6,7 +6,7 @@ ERROR=($2)
 CORRS=(0.0)
 
 #DB=cassandra
-DB=parquet
+DB=file
 #DB=h2
 
 CONF_PATH=$3
@@ -41,9 +41,9 @@ function reset-database {
 	"h2")
 	    # Delete the existing data stored in H2
 	    rm -rf $DB_PATH/modelardb.h2.mv.db
-	    rm -rf MODELARDB_PATH/modelardb.h2.mv.db
+	    rm -rf $MODELARDB_PATH/modelardb.h2.mv.db
 	    ;;
-	"parquet")
+	"file")
 	    # Delete existing database stored in parquet
 	    rm -rf $DB_PATH/modelardb
 	    rm -rf $MODELARDB_PATH/modelardb
@@ -100,12 +100,9 @@ function measure-database {
 	    final_size=$(du $MODELARDB_PATH/modelardb.h2.mv.db)
 	    echo "final_size=$final_size" >> $HOME/Downloads/output-"$1"-"$2"
 	    ;;
-	"parquet")
-      echo >> $HOME/Downloads/output-"$1"-"$2"
-      du --max-depth=0 $MODELARDB_PATH/modelardb >> $HOME/Downloads/output-"$1"-"$2"
-      echo >> $HOME/Downloads/output-"$1"-"$2"
+	"file")
       final_size=$(du --max-depth=0 $MODELARDB_PATH/modelardb)
-      echo "final_size=$final_size" >> $HOME/Downloads/output-"$1"-"$2"
+      echo "final_size=$final_size" >> $MODELARDB_PATH/IngestionLog.log # fixed must be changed later on # $HOME/Downloads/output-"$1"-"$2"
 	    ;;  
 	*)
 	    echo "ERROR: unknown database"
@@ -124,7 +121,7 @@ function copy-database {
 	"h2")
 	    mv $MODELARDB_PATH/modelardb.h2.mv.db $COPY_DB_PATH/modelardb.h2.mv.db-"$1"-"$2"
 	    ;;
-    "parquet")
+    "file")
 	    mv $MODELARDB_PATH/modelardb $COPY_DB_PATH/modelardb-"$1"-"$2"
 	    ;;
 	*)
@@ -132,12 +129,13 @@ function copy-database {
 	    exit 0
 	    ;;
     esac
-    mv $HOME/Downloads/output-"$1"-"$2" $COPY_DB_PATH
     mv $HOME/Downloads/verifier-"$1"-"$2" $COPY_DB_PATH
+    mv $MODELARDB_PATH/IngestionLog.log $COPY_DB_PATH/output-"$1"-"$2"
 }
 
 # Main Function
-cd $1
+cd $MODELARDB_PATH
+rm -r $COPY_DB_PATH/*
 for c in "${CORRS[@]}"
 do
     # shellcheck disable=SC2068
@@ -155,12 +153,12 @@ do
 
       # Ingest the data set with the correlation specified in corrs
       echo "Ingesting Dataset with: $e"
-      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt run | tee $HOME/Downloads/output-"$e"-"$c"
+      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt run 2> /dev/null #| tee $HOME/Downloads/output-"$e"-"$c"
       #echo 'dk.aau.modelardb.Main.main(Array())' | ~/Programs/spark-3.1.1-bin-hadoop3.2/bin/spark-shell --driver-memory $MEMORY --executor-memory $MEMORY --packages com.datastax.spark:spark-cassandra-connector_2.12:3.0.1 --jars ModelarDB-assembly-1.0.0.jar | tee $HOME/Downloads/output-"$e"-"$c"
       # cd to verifier and tee the result and cd back to modelardb home
       cd $VERIFIER_PATH
       SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $HOME $MODELARDB_PATH" | tee $HOME/Downloads/verifier-"$e"-"$c"
-      cd $1
+      cd $MODELARDB_PATH
       # Measure the amount of data stored in the database
       measure-database "$e" "$c"
       # Copy the database so the ingested data can be used
