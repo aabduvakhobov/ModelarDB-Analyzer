@@ -22,18 +22,33 @@ import dk.aau.modelardb.storage.{CassandraStorage, FileStorage, JDBCStorage, Sto
 
 import scala.collection.mutable
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{col, unix_timestamp}
-import org.eclipse.jetty.websocket.common.SessionFactory
-import org.h2.command.dml.{Query, Select}
-import org.h2.engine.{ConnectionInfo, Database, Session, User}
-import org.h2.table.{ColumnResolver, Table, TableFilter}
 
-import java.awt.Dimension
-import java.sql.DriverManager
-import scala.runtime.Nothing$
+import java.io.IOException
+import java.util.logging._
 
 
 object EngineFactory {
+  private var fh: FileHandler = _
+  private var jobLogger: java.util.logging.Logger = _
+
+
+  private def getJobLogger = {
+    if (jobLogger == null) {
+      jobLogger = java.util.logging.Logger.getLogger("ResultLogs")
+      try {
+        fh = new FileHandler("./Verifier.log")
+        fh.setFormatter(new SimpleFormatter)
+        jobLogger.addHandler(fh)
+      } catch {
+        case e: SecurityException =>
+          throw new RuntimeException(e)
+        case e: IOException =>
+          throw new RuntimeException(e)
+      }
+      jobLogger.setLevel(Level.INFO)
+    }
+    jobLogger
+  }
 
   /** Public Methods **/
   def startEngine(configuration: Configuration, storage: Storage): Unit = {
@@ -41,7 +56,7 @@ object EngineFactory {
   }
 
   private def verifier(configuration: Configuration, storage: Storage) = {
-
+    val logger = getJobLogger
     //Setup a Spark Session for connecting with the database
 // TODO: case matching for storage type based on config file
     val configStorage = configuration.getStorage.split(":")(0).trim
@@ -67,6 +82,7 @@ object EngineFactory {
     // iterate over the map and print out as: TS: [metric1, metric2, ...]
     metrics.foreach(m => message ++= s"\n${m._1}: [${m._2}]")
     println(message)
+    logger.info(message.toString())
   }
 
 

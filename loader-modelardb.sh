@@ -13,11 +13,11 @@ CONF_PATH=$3
 
 DB_PATH=$HOME/ModelarDB-Home/tempDBs
 
-COPY_DB_PATH=$DB_PATH/Ingested/
+COPY_DB_PATH=$DB_PATH/Ingested
 
 MODELARDB_PATH=$1
 
-VERIFIER_PATH=$HOME/ModelarDB-Home/EvaluationTool/Verifier/
+VERIFIER_PATH=$HOME/ModelarDB-Home/EvaluationTool/Verifier
 
 # also include OUTPUT_PATH
 if [[ $DB == cassandra ]]
@@ -129,7 +129,7 @@ function copy-database {
 	    exit 0
 	    ;;
     esac
-    mv $HOME/Downloads/verifier-"$1"-"$2" $COPY_DB_PATH
+    mv $VERIFIER_PATH/Verifier.log $COPY_DB_PATH/verifier-"$1"-"$2"
     mv $MODELARDB_PATH/IngestionLog.log $COPY_DB_PATH/output-"$1"-"$2"
 }
 
@@ -157,7 +157,7 @@ do
       #echo 'dk.aau.modelardb.Main.main(Array())' | ~/Programs/spark-3.1.1-bin-hadoop3.2/bin/spark-shell --driver-memory $MEMORY --executor-memory $MEMORY --packages com.datastax.spark:spark-cassandra-connector_2.12:3.0.1 --jars ModelarDB-assembly-1.0.0.jar | tee $HOME/Downloads/output-"$e"-"$c"
       # cd to verifier and tee the result and cd back to modelardb home
       cd $VERIFIER_PATH
-      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $HOME $MODELARDB_PATH" | tee $HOME/Downloads/verifier-"$e"-"$c"
+      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $HOME $MODELARDB_PATH" # | tee $HOME/Downloads/verifier-"$e"-"$c"
       cd $MODELARDB_PATH
       # Measure the amount of data stored in the database
       measure-database "$e" "$c"
