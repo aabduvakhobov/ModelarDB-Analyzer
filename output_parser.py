@@ -55,7 +55,8 @@ class OutputParser:
                 # list contains several strings of metrics for each TS file and error bound, so they're split
                 record = r.split(",")
                 # in accordance with data type they're calculated
-                byte_sum += int(record[0]) * object_size_estimate(record[-1])
+                # must also include the size of each timestamp: 32bit or 64 bit
+                byte_sum += int(record[0]) * object_size_estimate(record[-1]) * 8
                 # pattern matching method for different variables types and their vals
         return byte_sum
 
@@ -89,9 +90,12 @@ class OutputParser:
                 lines = f.read().rstrip()
                 # fetch compressed size, it comes in KB so converting to Bytes... later on
                 compressed = int(re.findall("final_size=[0-9]*", lines)[0].split("=")[1]) * 1024
-                # now expected size
-                expected = int(re.findall("Total Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
-            output_list.append((counter, error, file_size, compressed, expected))
+                # now expected size, already comes in bytes
+                models_size = int(re.findall("Models Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
+                metadata_size = int(re.findall("Metadata Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
+                gaps_size = int(re.findall("Gaps Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
+                total_expected_size = int(re.findall("Total Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
+            output_list.append((counter, error, file_size, compressed, models_size, metadata_size, gaps_size, total_expected_size))
             counter += 1
         return output_list
 
@@ -150,13 +154,13 @@ class OutputParser:
                 # fetch only the part after EVALUATION RESULT
                 line = f.read().split("EVALUATION RESULT:")[1].split("[success]")[0].strip()
                 # print(line)
-                # gets everything in the parenthesis after the file name in a list of records
+                # gets all ts file names in a list of records
                 ts = re.findall("(.+):", line)
                 ts = [i for i in ts if i != []]
                 metrics = {}
-                records = re.findall(f":\s+\[\((.+)\)\]", line)
                 # parse through the ts names
                 for ts_1 in ts:
+                    # fetch everything after the file name
                     metrics[ts_1] = re.findall(f"{ts_1}:\s+\[\((.+)\)\]", line)[0].split(",")
                     # now create collection of tuples in accordance with data tables
                     # the structure of a single row: (id, ts, error_bound, avg_error, max_error, diff_cnt, cnt)

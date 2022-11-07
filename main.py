@@ -1,7 +1,4 @@
 import subprocess
-import re
-import os
-from sqlite3 import Error
 
 from db_loader import MyDB
 from output_parser import OutputParser
@@ -12,10 +9,10 @@ from output_parser import OutputParser
 # creates sqlite database to store fetched data
 HOME = "/home/abduvoris"
 MODELARDB_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-dev/ModelarDB/"
-ERROR_BOUND = "5 10"
+ERROR_BOUND = "0 5"
 OUTPUT_PATH = f"{HOME}/ModelarDB-Home/tempDBs/Ingested/"
-DATA_PATH = f"{HOME}/ModelarDB-Home/ModelarDB/data/low_freq/processed"
-CONF_PATH = f"{HOME}"
+DATA_PATH = f"{HOME}/ModelarDB-Home/ModelarDB/data/low_freq/processed" # not needed anymore
+CONF_PATH = f"{HOME}" #DO WE REALLY NEED THAT?
 
 
 

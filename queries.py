@@ -5,7 +5,10 @@ CREATE TABLE IF NOT EXISTS file_size (
 id integer PRIMARY KEY AUTOINCREMENT,
 error_bound integer,
 original_size integer, 
-compressed_size integer, 
+compressed_size integer,
+models_size integer,
+metadata_size integer,
+gaps_size integer,
 expected_size integer
 );"""
 
@@ -19,21 +22,6 @@ data_point integer,
 segment integer
 );"""
 
-
-CREATE_SEGMENT_SIZE_TABLE_SQL_OLD: str = """
-CREATE TABLE IF NOT EXISTS segment_size (
-id integer PRIMARY KEY,
-time_series varchar,
-error_bound integer,
-pmc_data_points integer,
-swing_data_points integer,
-gorilla_data_points integer,
-pmc_segments integer,
-swing_segments integer,
-gorilla_segments integer
-);"""
-
-
 CREATE_ERROR_TABLE_SQL: str = """
 CREATE TABLE IF NOT EXISTS error_table (
 id integer PRIMARY KEY,
@@ -44,7 +32,6 @@ maximum_error double,
 difference_count integer,
 count integer
 );"""
-
 
 CREATE_FILE_SIZE_TABLE_HOR_SQL: str = """
 CREATE TABLE IF NOT EXISTS file_size (
@@ -59,6 +46,20 @@ expected_5 double,
 compressed_size_10 double, 
 expected_10 double
 );"""
+
+CREATE_SEGMENT_SIZE_TABLE_SQL_OLD: str = """
+CREATE TABLE IF NOT EXISTS segment_size (
+id integer PRIMARY KEY,
+time_series varchar,
+error_bound integer,
+pmc_data_points integer,
+swing_data_points integer,
+gorilla_data_points integer,
+pmc_segments integer,
+swing_segments integer,
+gorilla_segments integer
+);"""
+
 # drop statements
 DROP_TABLE_SEGMENT_SIZE_TABLE_QUERY = """DROP TABLE IF EXISTS segment_size;"""
 
@@ -73,8 +74,8 @@ VALUES (?,?,?,?,?,?)
 """
 
 INSERT_FILE_SIZE_QUERY = """
-INSERT INTO file_size (id, error_bound, original_size, compressed_size, expected_size)
-VALUES (?,?,?,?,?);
+INSERT INTO file_size (id, error_bound, original_size, compressed_size, models_size, metadata_size, gaps_size, expected_size)
+VALUES (?,?,?,?,?,?,?,?);
 """
 
 INSERT_ACTUAL_ERROR_QUERY = """
