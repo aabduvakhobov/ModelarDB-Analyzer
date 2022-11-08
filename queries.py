@@ -4,7 +4,8 @@ CREATE_FILE_SIZE_TABLE_SQL: str = """
 CREATE TABLE IF NOT EXISTS file_size (
 id integer PRIMARY KEY AUTOINCREMENT,
 error_bound integer,
-original_size integer, 
+theoretical_size integer,
+actual_file_size integer, 
 compressed_size integer,
 models_size integer,
 metadata_size integer,
@@ -74,8 +75,8 @@ VALUES (?,?,?,?,?,?)
 """
 
 INSERT_FILE_SIZE_QUERY = """
-INSERT INTO file_size (id, error_bound, original_size, compressed_size, models_size, metadata_size, gaps_size, expected_size)
-VALUES (?,?,?,?,?,?,?,?);
+INSERT INTO file_size (id, error_bound, theoretical_size, actual_file_size, compressed_size, models_size, metadata_size, gaps_size, expected_size)
+VALUES (?,?,?,?,?,?,?,?,?);
 """
 
 INSERT_ACTUAL_ERROR_QUERY = """

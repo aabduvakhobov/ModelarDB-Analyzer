@@ -53,38 +53,25 @@ class OutputParser:
             byte_sum = 0
             for r in records:
                 # list contains several strings of metrics for each TS file and error bound, so they're split
-                record = r.split(",")
+                num_rows = r.split(",")
                 # in accordance with data type they're calculated
                 # must also include the size of each timestamp: 32bit or 64 bit
-                byte_sum += int(record[0]) * object_size_estimate(record[-1]) * 8
+                # as you are ingesting multivariate ts, you should consider ts col only once
+                if byte_sum == 0:
+                    byte_sum += int(num_rows[0]) * (object_size_estimate(num_rows[-1]) + 8)
+                else:
+                    byte_sum += int(num_rows[0]) * object_size_estimate(num_rows[-1])
                 # pattern matching method for different variables types and their vals
         return byte_sum
 
     # public methods
-    # maybe two separate files would be parsed separately
-    def parse_file_size_hor(self):
-        # output_list = [self.__estimate_dir()]
-        # output_dict = {"original_file_size": self.__estimate_dir()}
-        output_dict = {}
-        for error in self.error_bound.split(" "):
-            file_size = self.__file_size_estimate(error)
-            output_dict["original_data_size"] = file_size
-            with open(self.output_path + f"output-{error}-0.0", "r") as f:
-                lines = f.read().rstrip()
-                # fetch compressed size
-                compressed = int(re.findall("final_size=[0-9]*", lines)[0].split("=")[1])
-                # now expected size
-                expected = int(re.findall("Total Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2]) / 1000
-
-                output_dict[f"compressed_size_{error}"] = int(compressed) * 1024
-                output_dict[f"expected_size_{error}"] = int(expected) * 1024
-        return output_dict
-
     def parse_file_size_ver(self):
         output_list = []
         counter = 0
         for error in self.error_bound.split(" "):
-            file_size = self.__file_size_estimate(error)
+            # actual file size comes in Bytes
+            actual_size_before_compression = self.__estimate_dir()
+            theoretical_file_size = self.__file_size_estimate(error)
             # output_list["original_data_size"] = file_size
             with open(self.output_path + f"output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
@@ -95,7 +82,7 @@ class OutputParser:
                 metadata_size = int(re.findall("Metadata Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
                 gaps_size = int(re.findall("Gaps Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
                 total_expected_size = int(re.findall("Total Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
-            output_list.append((counter, error, file_size, compressed, models_size, metadata_size, gaps_size, total_expected_size))
+            output_list.append((counter, error, theoretical_file_size, actual_size_before_compression, compressed, models_size, metadata_size, gaps_size, total_expected_size))
             counter += 1
         return output_list
 
@@ -169,3 +156,23 @@ class OutputParser:
                     )
                     counter += 1
         return output_list
+    
+        # maybe two separate files would be parsed separately
+    def parse_file_size_hor(self):
+        # output_list = [self.__estimate_dir()]
+        # output_dict = {"original_file_size": self.__estimate_dir()}
+        output_dict = {}
+        for error in self.error_bound.split(" "):
+            file_size = self.__file_size_estimate(error)
+            output_dict["original_data_size"] = file_size
+            with open(self.output_path + f"output-{error}-0.0", "r") as f:
+                lines = f.read().rstrip()
+                # fetch compressed size
+                compressed = int(re.findall("final_size=[0-9]*", lines)[0].split("=")[1])
+                # now expected size
+                expected = int(re.findall("Total Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2]) / 1000
+
+                output_dict[f"compressed_size_{error}"] = int(compressed) * 1024
+                output_dict[f"expected_size_{error}"] = int(expected) * 1024
+        return output_dict
+

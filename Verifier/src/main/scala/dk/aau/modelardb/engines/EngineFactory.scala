@@ -93,7 +93,7 @@ object EngineFactory {
     val sparkStorage = storage.asInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]
     //Detects the current data set used (EH / EP)
     val master = "local[*]"
-    val ssb = SparkSession.builder.master(master)
+    val ssb = SparkSession.builder.master(master).config("spark.driver.maxResultSize", "80g")
 
     val dimensions = configuration.getDimensions
 
