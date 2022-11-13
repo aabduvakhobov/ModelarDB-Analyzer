@@ -1,0 +1,17 @@
+JarIndex-Version: 1.0
+
+arrow-memory-core-7.0.0.jar
+META-INF
+META-INF/maven
+META-INF/maven/org.apache.arrow
+META-INF/maven/org.apache.arrow/arrow-memory-core
+org
+org/apache
+org/apache/arrow
+org/apache/arrow/memory
+org/apache/arrow/memory/rounding
+org/apache/arrow/memory/util
+org/apache/arrow/memory/util/hash
+org/apache/arrow/util
+git.properties
+

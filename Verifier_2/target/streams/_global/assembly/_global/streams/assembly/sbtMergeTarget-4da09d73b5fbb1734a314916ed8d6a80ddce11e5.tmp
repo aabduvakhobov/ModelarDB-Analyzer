@@ -1,0 +1,11 @@
+
+org.apache.hadoop.crypto.key.kms.KMSClientProvider$KMSTokenRenewer
+org.apache.hadoop.hdfs.DFSClient$Renewer
+org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier$Renewer
+org.apache.hadoop.hdfs.web.TokenAspect$TokenManager
+org.apache.hadoop.mapreduce.v2.security.MRDelegationTokenRenewer
+org.apache.hadoop.mapreduce.security.token.JobTokenIdentifier$Renewer
+org.apache.hadoop.yarn.security.AMRMTokenIdentifier$Renewer
+org.apache.hadoop.yarn.security.ContainerTokenIdentifier$Renewer
+org.apache.hadoop.yarn.security.client.RMDelegationTokenIdentifier$Renewer
+org.apache.hadoop.yarn.security.client.TimelineDelegationTokenIdentifier$Renewer

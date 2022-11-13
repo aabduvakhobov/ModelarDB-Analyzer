@@ -1,0 +1,43 @@
+// ------------------------------------------------------------------
+// Transitive dependencies of this project determined from the
+// maven pom organized by organization.
+// ------------------------------------------------------------------
+
+Kerby-kerb Admin
+
+
+From: 'QOS.ch' (http://www.qos.ch)
+  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:1.7.25
+    License: MIT License  (http://www.opensource.org/licenses/mit-license.php)
+
+From: 'The Apache Software Foundation' (http://www.apache.org/)
+  - Apache Commons IO (http://commons.apache.org/proper/commons-io/) commons-io:commons-io:jar:2.5
+    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+From: 'The Apache Software Foundation' (https://www.apache.org/)
+  - Kerby-kerb Common (http://directory.apache.org/kerby/kerby-kerb/kerb-common) org.apache.kerby:kerb-common:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby-kerb core (http://directory.apache.org/kerby/kerby-kerb/kerb-core) org.apache.kerby:kerb-core:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby-kerb Crypto (http://directory.apache.org/kerby/kerby-kerb/kerb-crypto) org.apache.kerby:kerb-crypto:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby-kerb Identity (http://directory.apache.org/kerby/kerby-kerb/kerb-identity) org.apache.kerby:kerb-identity:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby-kerb Server (http://directory.apache.org/kerby/kerby-kerb/kerb-server) org.apache.kerby:kerb-server:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby-kerb Util (http://directory.apache.org/kerby/kerby-kerb/kerb-util) org.apache.kerby:kerb-util:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby ASN1 Project (http://directory.apache.org/kerby/kerby-common/kerby-asn1) org.apache.kerby:kerby-asn1:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby Config (http://directory.apache.org/kerby/kerby-common/kerby-config) org.apache.kerby:kerby-config:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby PKIX Project (http://directory.apache.org/kerby/kerby-pkix) org.apache.kerby:kerby-pkix:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby Util (http://directory.apache.org/kerby/kerby-common/kerby-util) org.apache.kerby:kerby-util:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kerby XDR Project (http://directory.apache.org/kerby/kerby-common/kerby-xdr) org.apache.kerby:kerby-xdr:jar:1.0.1
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+
+
+

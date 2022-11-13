@@ -1,0 +1,4 @@
+
+org.apache.hadoop.security.alias.JavaKeyStoreProvider$Factory
+org.apache.hadoop.security.alias.LocalJavaKeyStoreProvider$Factory
+org.apache.hadoop.security.alias.UserProvider$Factory

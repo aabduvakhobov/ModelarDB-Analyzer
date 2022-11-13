@@ -1,0 +1,26 @@
+JarIndex-Version: 1.0
+
+flight-core-7.0.0.jar
+META-INF
+META-INF/maven
+META-INF/maven/org.apache.arrow
+META-INF/maven/org.apache.arrow/flight-core
+org
+org/apache
+org/apache/arrow
+org/apache/arrow/flight
+org/apache/arrow/flight/auth
+org/apache/arrow/flight/auth2
+org/apache/arrow/flight/client
+org/apache/arrow/flight/example
+org/apache/arrow/flight/grpc
+org/apache/arrow/flight/impl
+org/apache/arrow/flight/perf
+org/apache/arrow/flight/perf/impl
+org/apache/arrow/flight/sql
+org/apache/arrow/flight/sql/impl
+Flight.proto
+FlightSql.proto
+git.properties
+perf.proto
+

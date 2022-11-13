@@ -9,15 +9,10 @@ CORRS=(0.0)
 DB=file
 #DB=h2
 
-CONF_PATH=$3
-
-DB_PATH=$HOME/ModelarDB-Home/tempDBs
-
-COPY_DB_PATH=$DB_PATH/Ingested
-
+CONF_PATH=$HOME
 MODELARDB_PATH=$1
-
-VERIFIER_PATH=$HOME/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier
+VERIFIER_PATH=$3
+COPY_DB_PATH=$4
 
 # also include OUTPUT_PATH
 if [[ $DB == cassandra ]]
@@ -40,12 +35,10 @@ function reset-database {
 	    ;;
 	"h2")
 	    # Delete the existing data stored in H2
-	    rm -rf $DB_PATH/modelardb.h2.mv.db
 	    rm -rf $MODELARDB_PATH/modelardb.h2.mv.db
 	    ;;
 	"file")
 	    # Delete existing database stored in parquet
-	    rm -rf $DB_PATH/modelardb
 	    rm -rf $MODELARDB_PATH/modelardb
 	    ;;
 	*)
@@ -134,7 +127,9 @@ function copy-database {
 }
 
 # Main Function
+mkdir $COPY_DB_PATH
 cd $MODELARDB_PATH
+# this is contentious line of code...
 rm -r $COPY_DB_PATH/*
 for c in "${CORRS[@]}"
 do

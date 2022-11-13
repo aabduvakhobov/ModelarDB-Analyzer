@@ -1,0 +1,3 @@
+
+org.apache.hadoop.fs.FileSystemMultipartUploader$Factory
+org.apache.hadoop.hdfs.DFSMultipartUploaderFactory

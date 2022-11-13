@@ -1,0 +1,16 @@
+JarIndex-Version: 1.0
+
+netty-codec-socks-4.1.52.Final.jar
+META-INF
+META-INF/maven
+META-INF/maven/io.netty
+META-INF/maven/io.netty/netty-codec-socks
+io
+io/netty
+io/netty/handler
+io/netty/handler/codec
+io/netty/handler/codec/socks
+io/netty/handler/codec/socksx
+io/netty/handler/codec/socksx/v4
+io/netty/handler/codec/socksx/v5
+

@@ -1,0 +1,16 @@
+JarIndex-Version: 1.0
+
+arrow-memory-netty-7.0.0.jar
+META-INF
+META-INF/maven
+META-INF/maven/org.apache.arrow
+META-INF/maven/org.apache.arrow/arrow-memory-netty
+io
+io/netty
+io/netty/buffer
+org
+org/apache
+org/apache/arrow
+org/apache/arrow/memory
+git.properties
+

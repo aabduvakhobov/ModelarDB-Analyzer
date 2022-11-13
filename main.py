@@ -8,17 +8,16 @@ from output_parser import OutputParser
 # TODO: create a list of parameters to iterate from
 # creates sqlite database to store fetched data
 HOME = "/home/abduvoris"
-MODELARDB_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-dev/ModelarDB/"
+MODELARDB_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-dev/ModelarDB"
 ERROR_BOUND = "0 5"
-OUTPUT_PATH = f"{HOME}/ModelarDB-Home/tempDBs/Ingested/"
-DATA_PATH = f"{HOME}/ModelarDB-Home/ModelarDB/data/low_freq/processed" # not needed anymore
-CONF_PATH = f"{HOME}" #DO WE REALLY NEED THAT?
+OUTPUT_PATH = f"{HOME}/ModelarDB-Home/tempDBs/Ingested"
+DATA_PATH = f"{HOME}/ModelarDB-Home/ModelarDB/data/low_freq/processed" # for estimating size of raw data
+VERIFIER_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier"
 
 
-
-def run_script(MODELARDB_PATH, ERROR_BOUND, CONF_PATH):
+def run_script(modelardb_path, error_bound, verifier_path, output_path):
     # also need to pass in output_path
-    subprocess.run(["bash", "loader-modelardb.sh", f"{MODELARDB_PATH}", f"{ERROR_BOUND}", f"{CONF_PATH}"])
+    subprocess.run(["bash", "loader-modelardb.sh", f"{modelardb_path}", f"{error_bound}", f"{verifier_path}", f"{output_path}"])
 
 
 if __name__ == '__main__':
@@ -29,7 +28,7 @@ if __name__ == '__main__':
     db.create_table(conn)
 
     # iterate over bunch of files. use regex to get required elements and write them to db
-    run_script(MODELARDB_PATH, ERROR_BOUND, CONF_PATH)
+    run_script(MODELARDB_PATH, ERROR_BOUND, VERIFIER_PATH, OUTPUT_PATH)
 
     parser = OutputParser(DATA_PATH, OUTPUT_PATH, ERROR_BOUND)
     # file_size_dict_hor = parser.parse_file_size_hor()
