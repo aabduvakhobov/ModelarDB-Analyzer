@@ -1,3 +1,0 @@
-
-org.apache.hadoop.mapred.LocalClientProtocolProvider
-org.apache.hadoop.mapred.YarnClientProtocolProvider
