@@ -152,7 +152,7 @@ do
       #echo 'dk.aau.modelardb.Main.main(Array())' | ~/Programs/spark-3.1.1-bin-hadoop3.2/bin/spark-shell --driver-memory $MEMORY --executor-memory $MEMORY --packages com.datastax.spark:spark-cassandra-connector_2.12:3.0.1 --jars ModelarDB-assembly-1.0.0.jar | tee $HOME/Downloads/output-"$e"-"$c"
       # cd to verifier and tee the result and cd back to modelardb home
       cd $VERIFIER_PATH
-      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $HOME $MODELARDB_PATH/" # | tee $HOME/Downloads/verifier-"$e"-"$c"
+      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $HOME $MODELARDB_PATH/" 2> /dev/null # | tee $HOME/Downloads/verifier-"$e"-"$c"
       cd $MODELARDB_PATH
       # Measure the amount of data stored in the database
       measure-database "$e" "$c"

@@ -1,16 +1,13 @@
-[0m[[0m[33mwarn[0m] [0m[0m/home/abduvoris/ModelarDB-Home/ModelarDB/ModelarDB/src/main/scala/dk/aau/modelardb/Evaluate.scala:3:73: Unused import[0m
+[0m[[0m[33mwarn[0m] [0m[0m/home/cs.aau.dk/zg03zi/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier_2/src/main/scala/dk/aau/modelardb/Evaluate.scala:3:73: Unused import[0m
 [0m[[0m[33mwarn[0m] [0m[0mimport dk.aau.modelardb.core.{Configuration, Partitioner, SegmentGroup, TimeSeriesGroup}[0m
 [0m[[0m[33mwarn[0m] [0m[0m                                                                        ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m/home/abduvoris/ModelarDB-Home/ModelarDB/ModelarDB/src/main/scala/dk/aau/modelardb/Evaluate.scala:22:9: local val storageMedium in method verifier is never used[0m
+[0m[[0m[33mwarn[0m] [0m[0m/home/cs.aau.dk/zg03zi/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier_2/src/main/scala/dk/aau/modelardb/Evaluate.scala:22:9: local val storageMedium in method verifier is never used[0m
 [0m[[0m[33mwarn[0m] [0m[0m    val storageMedium =[0m
 [0m[[0m[33mwarn[0m] [0m[0m        ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m/home/abduvoris/ModelarDB-Home/ModelarDB/ModelarDB/src/main/scala/dk/aau/modelardb/Evaluate.scala:33:9: local val engine in method verifier is never used[0m
+[0m[[0m[33mwarn[0m] [0m[0m/home/cs.aau.dk/zg03zi/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier_2/src/main/scala/dk/aau/modelardb/Evaluate.scala:33:9: local val engine in method verifier is never used[0m
 [0m[[0m[33mwarn[0m] [0m[0m    val engine = configuration.getString("modelardb.engine")[0m
 [0m[[0m[33mwarn[0m] [0m[0m        ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m/home/abduvoris/ModelarDB-Home/ModelarDB/ModelarDB/src/main/scala/dk/aau/modelardb/Evaluate.scala:177:15: private method tidToGidMapper in object Evaluate is never used[0m
+[0m[[0m[33mwarn[0m] [0m[0m/home/cs.aau.dk/zg03zi/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier_2/src/main/scala/dk/aau/modelardb/Evaluate.scala:177:15: private method tidToGidMapper in object Evaluate is never used[0m
 [0m[[0m[33mwarn[0m] [0m[0m  private def tidToGidMapper(storage: Storage): mutable.HashMap[Integer, Integer] = {[0m
 [0m[[0m[33mwarn[0m] [0m[0m              ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m/home/abduvoris/ModelarDB-Home/ModelarDB/ModelarDB/src/main/scala/dk/aau/modelardb/Main.scala:20:49: Unused import[0m
-[0m[[0m[33mwarn[0m] [0m[0mimport dk.aau.modelardb.engines.{CodeGenerator, EngineFactory}[0m
-[0m[[0m[33mwarn[0m] [0m[0m                                                ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m5 warnings found[0m
+[0m[[0m[33mwarn[0m] [0m[0mfour warnings found[0m

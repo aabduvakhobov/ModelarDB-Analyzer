@@ -1,10 +1,6 @@
 import os
 import re
 
-
-
-
-
 class OutputParser:
     """
     docstring:
@@ -45,7 +41,7 @@ class OutputParser:
                 return 8
             else:
                 raise TypeError("Unknown type identified")
-        with open(self.output_path + f"verifier-{error}-0.0", "r") as f:
+        with open(self.output_path + f"/verifier-{error}-0.0", "r") as f:
             # fetch only the part after EVALUATION RESULT
             line = f.read().split("EVALUATION RESULT")[1]
             # gets everything in the parenthesis after the file name in a list of records
@@ -73,7 +69,7 @@ class OutputParser:
             actual_size_before_compression = self.__estimate_dir()
             theoretical_file_size = self.__file_size_estimate(error)
             # output_list["original_data_size"] = file_size
-            with open(self.output_path + f"output-{error}-0.0", "r") as f:
+            with open(self.output_path + f"/output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
                 # fetch compressed size, it comes in KB so converting to Bytes... later on
                 compressed = int(re.findall("final_size=[0-9]*", lines)[0].split("=")[1]) * 1024
@@ -95,7 +91,7 @@ class OutputParser:
         # iterate over error bounds set
         for error in self.error_bound.split(" "):
             # open the file
-            with open(self.output_path + f"output-{error}-0.0", "r") as f:
+            with open(self.output_path + f"/output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
                 # declare every param in a variable
                 # find the data source name
@@ -137,7 +133,7 @@ class OutputParser:
         # iterate over error bounds set
         for error in self.error_bound.split(" "):
             # open the file
-            with open(self.output_path + f"verifier-{error}-0.0", "r") as f:
+            with open(self.output_path + f"/verifier-{error}-0.0", "r") as f:
                 # fetch only the part after EVALUATION RESULT
                 line = f.read().split("EVALUATION RESULT:")[1].split("[success]")[0].strip()
                 # print(line)
@@ -165,7 +161,7 @@ class OutputParser:
         for error in self.error_bound.split(" "):
             file_size = self.__file_size_estimate(error)
             output_dict["original_data_size"] = file_size
-            with open(self.output_path + f"output-{error}-0.0", "r") as f:
+            with open(self.output_path + f"/output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
                 # fetch compressed size
                 compressed = int(re.findall("final_size=[0-9]*", lines)[0].split("=")[1])

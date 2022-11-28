@@ -7,12 +7,12 @@ from output_parser import OutputParser
 # TODO: go one level up and consider multiple databases
 # TODO: create a list of parameters to iterate from
 # creates sqlite database to store fetched data
-HOME = "/home/abduvoris"
-MODELARDB_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-dev/ModelarDB"
-ERROR_BOUND = "0 5"
+HOME = "/home/cs.aau.dk/zg03zi"
+MODELARDB_PATH = f"{HOME}/ModelarDB-Home/ModelarDB"
+ERROR_BOUND = "5"
 OUTPUT_PATH = f"{HOME}/ModelarDB-Home/tempDBs/Ingested"
-DATA_PATH = f"{HOME}/ModelarDB-Home/ModelarDB/data/low_freq/processed" # for estimating size of raw data
-VERIFIER_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier"
+DATA_PATH = "/srv/data1/abduvoris/post_treated_data_normalized_orc" # for estimating size of raw data
+VERIFIER_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier_2"
 
 
 def run_script(modelardb_path, error_bound, verifier_path, output_path):

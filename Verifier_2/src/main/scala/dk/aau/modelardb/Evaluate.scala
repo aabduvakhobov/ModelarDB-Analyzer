@@ -77,11 +77,6 @@ object Evaluate {
     //---------------------------------------------
 //    val timeSeries = Partitioner.initializeTimeSeries(configuration, tidToGid.keys.min-1)
     val timeSeries = Partitioner.initializeTimeSeries(configuration, 0)
-
-    //Foreach sid verify that all data points are within the error bound and compute the average error
-    var differenceSum: Double = 0.0
-    var differenceTotal: Double = 0
-    var differenceCount: Long = 0
     //    val dataSetPath = System.getProperty("user.home") + "/Data/" + dataSetName + "/"
     //val dataSetPath = "/user/cs.aau.dk/skj/home/Data/" + dataSetName + "/"
     val gsc = storage.getSourceGroupCache
@@ -92,9 +87,6 @@ object Evaluate {
     val modelsSegment = Array.fill[Long](mc.length)(0L)
     val modelsDataPoint = Array.fill[Long](mc.length)(0L)
 
-    var generalCount: Long = 0
-    var maxError = Double.MinValue
-    var dataType: String = null
 
     //Method for converting a Spark segment group row into a segment for the current sid
     import org.apache.spark.sql.Row
@@ -119,6 +111,14 @@ object Evaluate {
     //    Verify each data point
     var tid = 0
     while (tid < maxSid) {
+      
+      //Foreach sid verify that all data points are within the error bound and compute the average error
+      var differenceSum: Double = 0.0
+      var differenceTotal: Double = 0
+      var differenceCount: Long = 0
+      var generalCount: Long = 0
+      var maxError = Double.MinValue
+      var dataType: String = null
       // timeSeries array starts with 0 index, so it comes before tid+=1
       val ts = timeSeries(tid) // this might a problem a later on when grouping is implemented during ingestion
       ts.open()
@@ -154,8 +154,8 @@ object Evaluate {
             errors(Math.ceil(e).toInt) += 1L
             //            Updates the average error over the entire time series
             maxError = Math.max(maxError, e)
-            if (e != 0) differenceCount += 1
-            differenceSum += Math.abs(r.value - a.value)
+            if (e != 0.0) differenceCount += 1
+            differenceSum += e
             differenceTotal += Math.abs(r.value)
             generalCount += 1
             if (generalCount == 1) dataType = f(r.value)
@@ -164,7 +164,7 @@ object Evaluate {
       }
       //      Verifies that the approximated time series contained enough data points
       if (ts.hasNext) {
-        throw new IllegalArgumentException(s"CORE: $differenceCount is less than the size of ${ts.source}")
+        throw new IllegalArgumentException(s"CORE: $generalCount is less than the size of ${ts.source}")
       }
 
       val averageError = if (!(differenceSum/differenceCount).isNaN) differenceSum/differenceCount else 0D
