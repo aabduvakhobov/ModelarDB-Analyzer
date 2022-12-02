@@ -3,7 +3,7 @@
 CREATE_FILE_SIZE_TABLE_SQL: str = """
 CREATE TABLE IF NOT EXISTS file_size (
 id integer PRIMARY KEY AUTOINCREMENT,
-error_bound integer,
+error_bound double,
 theoretical_size integer,
 actual_file_size integer, 
 compressed_size integer,
@@ -17,7 +17,7 @@ CREATE_SEGMENT_SIZE_TABLE_SQL: str = """
 CREATE TABLE IF NOT EXISTS segment_size (
 id integer PRIMARY KEY,
 time_series varchar,
-error_bound integer,
+error_bound double,
 model_type varchar,
 data_point integer,
 segment integer
@@ -27,7 +27,7 @@ CREATE_ERROR_TABLE_SQL: str = """
 CREATE TABLE IF NOT EXISTS error_table (
 id integer PRIMARY KEY,
 time_series varchar,
-error_bound integer,
+error_bound double,
 average_error double,
 maximum_error double,
 difference_count integer,
@@ -52,7 +52,7 @@ CREATE_SEGMENT_SIZE_TABLE_SQL_OLD: str = """
 CREATE TABLE IF NOT EXISTS segment_size (
 id integer PRIMARY KEY,
 time_series varchar,
-error_bound integer,
+error_bound double,
 pmc_data_points integer,
 swing_data_points integer,
 gorilla_data_points integer,

@@ -45,13 +45,14 @@ class OutputParser:
             # fetch only the part after EVALUATION RESULT
             line = f.read().split("EVALUATION RESULT")[1]
             # gets everything in the parenthesis after the file name in a list of records
+            # e.g: PowerUpperLimit.orc: [(479908819,0.045610520159400245,0.0999999911940832,2.34729532E8,1.0706136051292585E7,Float)]
             records = re.findall(f":\s+\[\((.+)\)\]", line)
             byte_sum = 0
             for r in records:
                 # list contains several strings of metrics for each TS file and error bound, so they're split
                 num_rows = r.split(",")
                 # in accordance with data type they're calculated
-                # must also include the size of each timestamp: 32bit or 64 bit
+                # must also include the size of each timestamp: 32bit (epoch time in seconds) or 64 bit (milliseconds)
                 # as you are ingesting multivariate ts, you should consider ts col only once
                 if byte_sum == 0:
                     byte_sum += int(num_rows[0]) * (object_size_estimate(num_rows[-1]) + 8)

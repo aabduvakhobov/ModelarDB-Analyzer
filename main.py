@@ -9,9 +9,9 @@ from output_parser import OutputParser
 # creates sqlite database to store fetched data
 HOME = "/home/cs.aau.dk/zg03zi"
 MODELARDB_PATH = f"{HOME}/ModelarDB-Home/ModelarDB"
-ERROR_BOUND = "5"
+ERROR_BOUND = "0 0.01 0.05 0.1 0.2 0.5"
 OUTPUT_PATH = f"{HOME}/ModelarDB-Home/tempDBs/Ingested"
-DATA_PATH = "/srv/data1/abduvoris/post_treated_data_normalized_orc" # for estimating size of raw data
+DATA_PATH = "/srv/data5/abduvoris/ukwan-powerlog-processed-orc" # for estimating size of raw data
 VERIFIER_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier_2"
 
 
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     db.create_table(conn)
 
     # iterate over bunch of files. use regex to get required elements and write them to db
-    run_script(MODELARDB_PATH, ERROR_BOUND, VERIFIER_PATH, OUTPUT_PATH)
+    # run_script(MODELARDB_PATH, ERROR_BOUND, VERIFIER_PATH, OUTPUT_PATH)
 
     parser = OutputParser(DATA_PATH, OUTPUT_PATH, ERROR_BOUND)
     # file_size_dict_hor = parser.parse_file_size_hor()

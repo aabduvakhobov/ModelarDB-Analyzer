@@ -1,5 +1,6 @@
 package dk.aau.modelardb
 
+import org.apache.spark.SparkConf
 import dk.aau.modelardb.core.{Configuration, Partitioner, SegmentGroup, TimeSeriesGroup}
 import dk.aau.modelardb.storage.Storage
 import org.apache.spark.sql.SparkSession
@@ -68,7 +69,8 @@ object Evaluate {
     val sparkStorage = storage.asInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]
     //Detects the current data set used (EH / EP)
     val master = "local[*]"
-    val ssb = SparkSession.builder.master(master).config("spark.driver.maxResultSize", "80g")
+    val conf = new SparkConf().set("spark.driver.maxResultSize", "150g").set("spark.local.dir", "/srv/data5/abduvoris").set("spark.executor.memory", "20g")
+    val ssb = SparkSession.builder.master(master).config(conf)
 
     val dimensions = configuration.getDimensions
     sparkStorage.storeMetadataAndInitializeCaches(configuration, Array())

@@ -143,7 +143,7 @@ do
       #cp $HOME/Programs/modelardb-azure.conf $HOME/Programs/modelardb.conf
 
       # Set the user defined correlation and error bound
-      sed -i -e "s/error_bound\s[0-9]\+/error_bound $e/g" $CONF_PATH/.modelardb.conf
+      sed -i -e "s/error_bound\s[0-9\.?0-9]\+/error_bound $e/g" $CONF_PATH/.modelardb.conf
       sed -i -e "s/(correlation)/$c/g" $CONF_PATH/.modelardb.conf
 
       # Ingest the data set with the correlation specified in corrs
