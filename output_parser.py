@@ -55,9 +55,9 @@ class OutputParser:
                 # must also include the size of each timestamp: 32bit (epoch time in seconds) or 64 bit (milliseconds)
                 # as you are ingesting multivariate ts, you should consider ts col only once
                 if byte_sum == 0:
-                    byte_sum += int(num_rows[0]) * (object_size_estimate(num_rows[-1]) + 8)
+                    byte_sum += int(num_rows[0]) * (object_size_estimate(num_rows[-2]) + 8)
                 else:
-                    byte_sum += int(num_rows[0]) * object_size_estimate(num_rows[-1])
+                    byte_sum += int(num_rows[0]) * object_size_estimate(num_rows[-2])
                 # pattern matching method for different variables types and their vals
         return byte_sum
 
@@ -147,9 +147,10 @@ class OutputParser:
                     # fetch everything after the file name
                     metrics[ts_1] = re.findall(f"{ts_1}:\s+\[\((.+)\)\]", line)[0].split(",")
                     # now create collection of tuples in accordance with data tables
-                    # the structure of a single row: (id, ts, error_bound, avg_error, max_error, diff_cnt, cnt)
+                    # the structure of a single row: (id, ts, error_bound, avg_error, max_error, diff_cnt, cnt, mae)
+                    # order of metrics in verifier.. log: (generalCount, averageError, maxError, differenceCount, differenceSum, dataType, averageErrorWithZero)
                     output_list.append(
-                        (counter, ts_1, error, metrics[ts_1][1], metrics[ts_1][2], metrics[ts_1][3], metrics[ts_1][0])
+                        (counter, ts_1, error, metrics[ts_1][1], metrics[ts_1][2], metrics[ts_1][3], metrics[ts_1][0], metrics[ts_1][6])
                     )
                     counter += 1
         return output_list

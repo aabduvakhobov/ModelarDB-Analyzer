@@ -31,7 +31,8 @@ error_bound double,
 average_error double,
 maximum_error double,
 difference_count integer,
-count integer
+count integer,
+mean_absolute_error double
 );"""
 
 CREATE_FILE_SIZE_TABLE_HOR_SQL: str = """
@@ -80,8 +81,8 @@ VALUES (?,?,?,?,?,?,?,?,?);
 """
 
 INSERT_ACTUAL_ERROR_QUERY = """
-INSERT INTO error_table (id, time_series, error_bound, average_error, maximum_error, difference_count, count)
-VALUES (?,?,?,?,?,?,?);
+INSERT INTO error_table (id, time_series, error_bound, average_error, maximum_error, difference_count, count, mean_absolute_error)
+VALUES (?,?,?,?,?,?,?,?);
 """
 
 INSERT_FILE_SIZE_QUERY_OLD = """

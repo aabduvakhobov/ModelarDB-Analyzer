@@ -61,8 +61,8 @@ object Evaluate {
     }
     jobLogger
   }
-
-  private def verifyError(storage: Storage, configuration: Configuration): mutable.Map[String, (BigInt, Double, Double, Double, Double, String)] = {
+  
+  private def verifyError(storage: Storage, configuration: Configuration): mutable.Map[String, (BigInt, Double, Double, Long, Double, String, Double)] = {
     if ( ! storage.isInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]) {
       throw new UnsupportedOperationException("CORE: verification is only supported for SparkStorage")
     }
@@ -109,7 +109,7 @@ object Evaluate {
     val maxSid = storage.getMaxTid
     //    val rows = sparkStorage.getSegmentGroups(spark, Array(org.apache.spark.sql.sources.EqualTo("gid", gsc(maxSid)))).collect()
     //    var generalCount: Long = 0
-    val metricsMap = mutable.Map.empty[String, (BigInt, Double, Double, Double, Double, String)]
+    val metricsMap = mutable.Map.empty[String, (BigInt, Double, Double, Long, Double, String, Double)]
     //    Verify each data point
     var tid = 0
     while (tid < maxSid) {
@@ -170,7 +170,8 @@ object Evaluate {
       }
 
       val averageError = if (!(differenceSum/differenceCount).isNaN) differenceSum/differenceCount else 0D
-      metricsMap(ts.source) = (generalCount, averageError, maxError, differenceCount, differenceSum, dataType)
+      val averageErrorWithZero = if (!(differenceSum/generalCount).isNaN) differenceSum/generalCount else 0D
+      metricsMap(ts.source) = (generalCount, averageError, maxError, differenceCount, differenceSum, dataType, averageErrorWithZero)
     }
     metricsMap
   }

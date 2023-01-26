@@ -9,9 +9,10 @@ from output_parser import OutputParser
 # creates sqlite database to store fetched data
 HOME = "/home/cs.aau.dk/zg03zi"
 MODELARDB_PATH = f"{HOME}/ModelarDB-Home/ModelarDB"
-ERROR_BOUND = "0 0.01 0.05 0.1 0.2 0.5"
-OUTPUT_PATH = f"{HOME}/ModelarDB-Home/tempDBs/Ingested"
-DATA_PATH = "/srv/data5/abduvoris/ukwan-powerlog-processed-orc" # for estimating size of raw data
+ERROR_BOUND = "0 0.01 0.05 0.1 0.2 0.5 1"
+# ERROR_BOUND = "0"
+OUTPUT_PATH = f"{HOME}/ModelarDB-Home/tempDBs/Ingested" #"/srv/data5/abduvoris/Ingested" 
+DATA_PATH = "/srv/data5/abduvoris/ukwan-selected" # for estimating size of raw data
 VERIFIER_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier_2"
 
 
@@ -28,21 +29,16 @@ if __name__ == '__main__':
     db.create_table(conn)
 
     # iterate over bunch of files. use regex to get required elements and write them to db
-    # run_script(MODELARDB_PATH, ERROR_BOUND, VERIFIER_PATH, OUTPUT_PATH)
+    run_script(MODELARDB_PATH, ERROR_BOUND, VERIFIER_PATH, OUTPUT_PATH)
 
     parser = OutputParser(DATA_PATH, OUTPUT_PATH, ERROR_BOUND)
-    # file_size_dict_hor = parser.parse_file_size_hor()
 
     file_size_list = parser.parse_file_size_ver()
-    # print(f"FILE SIZE VERTICAL: \n{file_size_dict_ver}")
-
+   
     segments_output_list = parser.parse_segment_size()
-    # print(f"SEGMENT SIZE: \n{segments_output_list}")
 
     errors_output_list = parser.parse_errors()
-    #
-    # # now insert data to db
-    #
+    # now insert data to db
     for data in file_size_list:
         db.insert_metrics(conn, data, 0)
 
@@ -51,8 +47,6 @@ if __name__ == '__main__':
 
     for data in errors_output_list:
         db.insert_metrics(conn, data, 2)
-
-
 
     db.select_table(conn, "segment_size")
     print("File_size and actual error table: ")

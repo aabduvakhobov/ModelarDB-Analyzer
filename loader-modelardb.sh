@@ -122,8 +122,8 @@ function copy-database {
 	    exit 0
 	    ;;
     esac
-    mv $VERIFIER_PATH/Verifier.log $COPY_DB_PATH/verifier-"$1"-"$2"
     mv $MODELARDB_PATH/IngestionLog.log $COPY_DB_PATH/output-"$1"-"$2"
+    mv $VERIFIER_PATH/Verifier.log $COPY_DB_PATH/verifier-"$1"-"$2"
 }
 
 # Main Function
