@@ -17,20 +17,12 @@ package dk.aau.modelardb.engines
 import dk.aau.modelardb.core.Dimensions
 
 import java.sql.{SQLException, Timestamp}
+
 import scala.collection.mutable
 
 object EngineUtilities {
-  /** Instance Variables **/
-  var segmentViewNameToIndex: Map[String, Int] = _
-  var dataPointViewNameToIndex: Map[String, Int] = _
 
   /** Public Methods **/
-  //Query Rewrite
-  def rewriteQuery(query: String): String = {
-    query.replace("COUNT_S(#)", "COUNT_S(tid, start_time, end_time)")
-      .replace("#", "tid, start_time, end_time, mtid, model, gaps")
-  }
-
   //Projection
   def initialize(dimensions: Dimensions): Unit = {
     //Segment View
@@ -40,7 +32,7 @@ object EngineUtilities {
       "end_time" -> 3,
       "mtid" -> 4,
       "model" -> 5,
-      "gaps" -> 6) ++
+      "offsets" -> 6) ++
       dimensions.getColumns.zipWithIndex.map(p => (p._1, p._2 + 7)).toMap
 
     //Data Point View
@@ -117,4 +109,8 @@ object EngineUtilities {
       case cl => throw new SQLException(s"ModelarDB: a ${cl.getClass} cannot be converted to a Timestamp")
     }
   }
+
+  /** Instance Variables **/
+  var segmentViewNameToIndex: Map[String, Int] = _
+  var dataPointViewNameToIndex: Map[String, Int] = _
 }

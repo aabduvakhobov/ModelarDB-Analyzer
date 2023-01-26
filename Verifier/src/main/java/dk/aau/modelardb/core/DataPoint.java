@@ -25,7 +25,7 @@ public class DataPoint {
 
     /** Public Methods **/
     public String toString() {
-        return "DataPoint: [" + this.tid + " | " + new java.sql.Timestamp(this.timestamp) + " | " + this.timestamp +" | " + this.value + "]";
+        return "DataPoint: [" + this.tid + " | " + new java.sql.Timestamp(this.timestamp) + " | " + this.value + "]";
     }
 
     /** Instance Variables **/

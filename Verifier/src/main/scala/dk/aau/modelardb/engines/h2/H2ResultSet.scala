@@ -16,10 +16,11 @@ package dk.aau.modelardb.engines.h2
 
 import dk.aau.modelardb.engines.{CodeGenerator, H2JDBCToArrow}
 import dk.aau.modelardb.remote.ArrowResultSet
+
 import org.apache.arrow.memory.RootAllocator
 import org.apache.arrow.vector.VectorSchemaRoot
-import org.apache.arrow.vector.types.pojo.{ArrowType, Field, FieldType, Schema}
 import org.apache.arrow.vector.types.{FloatingPointPrecision, TimeUnit}
+import org.apache.arrow.vector.types.pojo.{ArrowType, Field, FieldType, Schema}
 
 import java.sql.{DriverManager, ResultSetMetaData, Types}
 import java.util

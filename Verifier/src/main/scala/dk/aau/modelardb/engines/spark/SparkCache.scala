@@ -15,7 +15,6 @@
 package dk.aau.modelardb.engines.spark
 
 import dk.aau.modelardb.core.utility.Static
-
 import edu.berkeley.cs.amplab.spark.indexedrdd.IndexedRDD
 import edu.berkeley.cs.amplab.spark.indexedrdd.IndexedRDD.intSet
 import org.apache.spark.rdd.RDD
@@ -26,19 +25,6 @@ import java.sql.Timestamp
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 class SparkCache(sparkSession: SparkSession, maxSegmentsCached: Int, newGids: Range) {
-
-  /** Instance Variables **/
-  private var checkpointCounter = 10
-  private val emptyRDD = sparkSession.sparkContext.emptyRDD[Row]
-  private val cacheLock = new ReentrantReadWriteLock()
-  private var lastFlush = 0
-
-  private var storageCacheKey: Array[Filter] = Array(null)
-  private var storageCacheRDD = this.emptyRDD
-
-  private var temporaryRDD: IndexedRDD[Int, Array[Row]] = getIndexedRDD
-  private var finalizedRDD = this.emptyRDD
-  private var ingestedRDD = this.emptyRDD
 
   /** Public Methods **/
   def update(microBatch: RDD[Row]): Unit = {
@@ -75,14 +61,18 @@ class SparkCache(sparkSession: SparkSession, maxSegmentsCached: Int, newGids: Ra
     //The cache is now invalid and must be cleared to ensure queries are correct
     this.finalizedRDD.unpersist()
     this.finalizedRDD = this.emptyRDD
-    this.storageCacheRDD.unpersist()
-    this.storageCacheKey = Array(null)
+    this.invalidate()
 
     //A ReentrantReadWriteLock cannot be upgraded, so a reader must be informed that a flush occurred
     // between it releasing its read lock and getting a write lock. A counter is used instead of a flag
     // so two writes cannot reset the flag for a reader: Unlock Read -> Writer -> Writer -> Lock Write
     this.lastFlush += 1
     this.cacheLock.writeLock().unlock()
+  }
+
+  def invalidate(): Unit = {
+    this.storageCacheRDD.unpersist()
+    this.storageCacheKey = Array(null)
   }
 
   def getSegmentGroupRDD(filters: Array[Filter]): RDD[Row] = {
@@ -156,12 +146,22 @@ class SparkCache(sparkSession: SparkSession, maxSegmentsCached: Int, newGids: Ra
       indexedRDD.persist()
     }
   }
+
+  /** Instance Variables **/
+  private var checkpointCounter = 10
+  private val emptyRDD = sparkSession.sparkContext.emptyRDD[Row]
+  private val cacheLock = new ReentrantReadWriteLock()
+  private var lastFlush = 0
+
+  private var storageCacheKey: Array[Filter] = Array(null)
+  private var storageCacheRDD = this.emptyRDD
+
+  private var temporaryRDD: IndexedRDD[Int, Array[Row]] = getIndexedRDD
+  private var finalizedRDD = this.emptyRDD
+  private var ingestedRDD = this.emptyRDD
 }
 
 object SparkCache {
-
-  /** Instance Variables **/
-  private val groupMetadataCache = Spark.getSparkStorage.groupMetadataCache
 
   /** Private Methods **/
   private def updateTemporarySegment(buffer: Array[Row], input: Array[Row]): Array[Row] = {
@@ -211,4 +211,7 @@ object SparkCache {
       buffer.filter(_ != null).distinct
     }
   }
+
+  /** Instance Variables **/
+  private val groupMetadataCache = Spark.getSparkStorage.groupMetadataCache
 }

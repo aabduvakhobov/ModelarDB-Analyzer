@@ -13,7 +13,7 @@ ERROR_BOUND = "0 0.01 0.05 0.1 0.2 0.5 1"
 # ERROR_BOUND = "0"
 OUTPUT_PATH = f"{HOME}/ModelarDB-Home/tempDBs/Ingested" #"/srv/data5/abduvoris/Ingested" 
 DATA_PATH = "/srv/data5/abduvoris/ukwan-selected" # for estimating size of raw data
-VERIFIER_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier_2"
+VERIFIER_PATH = f"{HOME}/ModelarDB-Home/ModelarDB-Evaluation-Tool/Verifier"
 
 
 def run_script(modelardb_path, error_bound, verifier_path, output_path):

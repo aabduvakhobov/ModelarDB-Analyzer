@@ -53,10 +53,10 @@ public class TimeSeriesParquet extends TimeSeries {
                     schema.getFields().get(this.timestampColumnIndex), schema.getFields().get(this.valueColumnIndex));
 
             //next() assumes timestamps are stored as int64 with the TIMESTAMP_MICROS logical type annotation
-//            String[] typeComponents = schema.getColumns().get(this.timestampColumnIndex).getPrimitiveType().toString().split(" ");
-//            if ( ! typeComponents[1].equals("int64") || ! typeComponents[3].equals("(TIMESTAMP_MICROS)")) {
-//              throw new UnsupportedOperationException("CORE: Parquet files must store timestamps as int64 (TIMESTAMP_MICROS)");
-//            }
+            String[] typeComponents = schema.getColumns().get(this.timestampColumnIndex).getPrimitiveType().toString().split(" ");
+            if ( ! typeComponents[1].equals("int64") || ! typeComponents[3].equals("(TIMESTAMP_MICROS)")) {
+              throw new UnsupportedOperationException("CORE: Parquet files must store timestamps as int64 (TIMESTAMP_MICROS)");
+            }
         } catch (IOException ioe) {
             close();
             throw new RuntimeException(ioe);

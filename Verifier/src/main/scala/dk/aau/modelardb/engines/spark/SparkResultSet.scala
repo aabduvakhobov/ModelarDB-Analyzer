@@ -16,12 +16,14 @@ package dk.aau.modelardb.engines.spark
 
 import dk.aau.modelardb.engines.{CodeGenerator, SparkDataFrameToArrow}
 import dk.aau.modelardb.remote.ArrowResultSet
+
 import org.apache.arrow.memory.RootAllocator
 import org.apache.arrow.vector.VectorSchemaRoot
-import org.apache.arrow.vector.types.pojo.{ArrowType, Field, FieldType, Schema}
 import org.apache.arrow.vector.types.{FloatingPointPrecision, TimeUnit}
+import org.apache.arrow.vector.types.pojo.{ArrowType, Field, FieldType, Schema}
+
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{BinaryType, DoubleType, FloatType, IntegerType, LongType, StringType, StructType, TimestampType}
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.JavaConverters._

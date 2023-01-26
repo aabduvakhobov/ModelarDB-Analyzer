@@ -16,15 +16,16 @@ package dk.aau.modelardb.engines
 
 import dk.aau.modelardb.core.utility.ValueFunction
 import dk.aau.modelardb.core.{DataPoint, SegmentGroup}
+
 import org.apache.arrow.vector.VectorSchemaRoot
+
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{BinaryType, DataType, DoubleType, FloatType, IntegerType, LongType, StringType, StructType, TimestampType}
-
 import java.util
+
 import org.h2.table.Column
 import org.h2.value.{TypeInfo, Value}
-
 import java.sql.{ResultSet, Types}
 
 //Abstract classes that the CodeGenerator can generated instances for at run-time using the ToolBox APIs
@@ -143,7 +144,7 @@ object CodeGenerator {
         case "END_TIME" => "segment.endTime"
         case "MTID" => "segment.mtid"
         case "MODEL" => "segment.model"
-        case "GAPS" => "segment.offsets"
+        case "OFFSETS" => "segment.offsets"
         case _ => "tsmc(segment.gid)(%d)".format(column.getColumnId - 6)
       }
       "currentValues(%d)".format(column.getColumnId) + " = " + constructor.format(variableName)

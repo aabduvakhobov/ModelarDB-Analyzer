@@ -34,7 +34,7 @@ class ViewSegment(dimensions: Array[StructField]) (@transient val sqlContext: SQ
     StructField("end_time", TimestampType, nullable = false),
     StructField("mtid", IntegerType, nullable = false),
     StructField("model", BinaryType, nullable = false),
-    StructField("gaps", BinaryType, nullable = false))
+    StructField("offsets", BinaryType, nullable = false))
     ++ dimensions)
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] = filters
@@ -65,7 +65,7 @@ class ViewSegment(dimensions: Array[StructField]) (@transient val sqlContext: SQ
       case sources.LessThanOrEqual("tid", tid: Int) => sources.In("gid", EngineUtilities.tidRangeToGidIn(0, tid, tsgc))
       case sources.In("tid", values: Array[Any]) => sources.In("gid", EngineUtilities.tidInToGidIn(values, tsgc))
       case sources.EqualTo(column: String, value: Any) if mtsc.contains(column.toUpperCase) => //mtsc's keys are uppercase for consistency
-        sources.In("gid", EngineUtilities.dimensionEqualToGidIn(column, value, mtsc))
+        sources.In("gid", EngineUtilities.dimensionEqualToGidIn(column.toUpperCase, value, mtsc))
       case f => f
     }
 

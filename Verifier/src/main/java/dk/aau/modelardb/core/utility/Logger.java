@@ -108,29 +108,12 @@ public class Logger implements Serializable {
 
         long finalizedCounter = this.finalizedSegmentCounter.values().stream().mapToLong(Long::longValue).sum();
         sb.append("\nFinalized Segment Counter - Total: ").append(finalizedCounter).append('\n');
-        // some amendments to the code to print out also unused model types
-        if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.PMC_MeanModelType")){
-            sb.append("-- ").append("dk.aau.modelardb.core.models.PMC_MeanModelType").append(" | Count: ").append("0").append('\n');
-        } else if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.SwingFilterModelType")){
-            sb.append("-- ").append("dk.aau.modelardb.core.models.SwingFilterModelType").append(" | Count: ").append("0").append('\n');
-        } else if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.FacebookGorillaModelType")) {
-            sb.append("-- ").append("dk.aau.modelardb.core.models.FacebookGorillaModelType").append(" | Count: ").append("0").append('\n');
-        }
-
         for (Map.Entry<String, Long> e : this.finalizedSegmentCounter.entrySet()) {
             sb.append("-- ").append(e.getKey()).append(" | Count: ").append(e.getValue()).append('\n');
         }
 
         finalizedCounter = this.finalizedDataPointCounter.values().stream().mapToLong(Long::longValue).sum();
         sb.append("\nFinalized Segment DataPoint Counter - Total: ").append(finalizedCounter).append('\n');
-
-        if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.PMC_MeanModelType")){
-            sb.append("-- ").append("dk.aau.modelardb.core.models.PMC_MeanModelType").append(" | DataPoint: ").append("0").append('\n');
-        } else if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.SwingFilterModelType")){
-            sb.append("-- ").append("dk.aau.modelardb.core.models.SwingFilterModelType").append(" | DataPoint: ").append("0").append('\n');
-        } else if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.FacebookGorillaModelType")){
-            sb.append("-- ").append("dk.aau.modelardb.core.models.FacebookGorillaModelType").append(" | DataPoint: ").append("0").append('\n');
-        }
         for (Map.Entry<String, Long> e : this.finalizedDataPointCounter.entrySet()) {
             sb.append("-- ").append(e.getKey()).append(" | DataPoint: ").append(e.getValue()).append('\n');
         }

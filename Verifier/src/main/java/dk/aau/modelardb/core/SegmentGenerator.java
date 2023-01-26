@@ -153,7 +153,7 @@ public class SegmentGenerator {
 
         //The current model type is given the data points and it verifies that the model can represent them and all prior,
         // it is assumed that append will fail if it failed in the past, so append(t,V) must fail if append(t-1,V) failed
-        if ( ! this.currentModelType.append(currentDataPoints)) {//returns false if model cant represent the data point and switches to another modeltype
+        if ( ! this.currentModelType.append(currentDataPoints)) {
             this.modelTypeIndex += 1;
             if (this.modelTypeIndex == this.modelTypes.length) {
                 //If none of the model types can represent all of the buffered data points, the model type that provides

@@ -14,11 +14,11 @@
  */
 package dk.aau.modelardb
 
+import dk.aau.modelardb.core._
 import dk.aau.modelardb.core.models.ModelTypeFactory
-import dk.aau.modelardb.core.{Configuration, Correlation, Dimensions}
+import dk.aau.modelardb.core.utility.{Pair, Static, ValueFunction}
 import dk.aau.modelardb.engines.{CodeGenerator, EngineFactory}
 import dk.aau.modelardb.storage.StorageFactory
-import dk.aau.modelardb.core.utility.{Pair, Static, ValueFunction}
 
 import java.io.File
 import java.nio.file.{FileSystems, Paths}
@@ -36,7 +36,6 @@ object Main {
 
     //ModelarDB checks args(0) for a config and uses $HOME/.modelardb.conf as a fallback
     val fallback = System.getProperty("user.home") + "/.modelardb.conf"
-    // path to confiuration file is obtained either through parameter or default path is used
     val configPath: String = if (args.length == 1) {
       args(0)
     } else if (new java.io.File(fallback).exists) {
@@ -49,15 +48,18 @@ object Main {
     }
 
     /* Configuration */
-    val configuration = readConfigurationFile(configPath) //Parses conf file and instantiates Configuration object
-    // (hashmap of conf parameters)
-    TimeZone.setDefault(configuration.getTimeZone) //Ensures all components use the same time zone configuration
-    /* Storage */
-//    val mdbHomePath = "/home/abduvoris/ModelarDB-Home/ModelarDB-dev/ModelarDB/"
-    val storage = StorageFactory.getStorage(args(1), configuration.getString("modelardb.storage"))
-    /* Engine */
-    EngineFactory.startEngine(configuration, storage)
+    val configuration = readConfigurationFile(configPath)
+    TimeZone.setDefault(configuration.getTimeZone) //Ensures all components use the same time zone
 
+    /* Storage */
+    val storage = if (args(1).nonEmpty) {
+      StorageFactory.getStorage(configuration, args(1))
+    } else {
+      StorageFactory.getStorage(configuration)
+    }
+
+    /* Engine */
+    Evaluate.verifier(configuration, storage)
     /* Cleanup */
     storage.close()
   }
@@ -88,42 +90,48 @@ object Main {
     val configFullSource = Source.fromFile(configPath)
     for (line <- configFullSource.getLines().filter(_.nonEmpty)) {
       //Parsing is performed naively and will terminate if the config is malformed
-      val lineSplit = line.trim().split(" ", 2)
-      lineSplit(0) match {
-        case "modelardb.model_type" => models.append(lineSplit(1))
-        case "modelardb.source" => appendSources(lineSplit(1), sources)
-        case "modelardb.source.derived" =>
-          //Store a mapping from the original source to the derived source and the function to map over its values
-          val derived = lineSplit(1).split(' ').map(_.trim)
-          val transformation = CodeGenerator.getValueFunction(derived(2))
-          if ( ! derivedSources.containsKey(derived(0))) {
-            derivedSources.put(derived(0), ArrayBuffer[Pair[String, ValueFunction]]())
-          }
-          derivedSources.get(derived(0)).append(new Pair(derived(1), transformation))
-        case "modelardb.dimensions" => //Purposely empty as modelardb.dimensions have already been parsed
-        case "modelardb.correlation" =>
-          //If the value is a file each line is considered a clause
-          val tls = lineSplit(1).trim
-          if (new File(tls).exists()) {
-            val correlationSource = Source.fromFile(tls)
-            for (line <- correlationSource.getLines()) {
-              correlations.append(parseCorrelation(line, dimensions))
+      val lineBeforeComment = line.takeWhile(_ != '#')
+      val lineSplit = lineBeforeComment.trim().split(" ", 2)
+      try { //Catches all cases were the correct number of arguments were not set for lineSplit(0)
+        lineSplit(0) match {
+          case "modelardb.model_type" => models.append(lineSplit(1))
+          case "modelardb.source" => appendSources(lineSplit(1), sources)
+          case "modelardb.source.derived" =>
+            //Store a mapping from the original source to the derived source and the function to map over its values
+            val derived = lineSplit(1).split(' ').map(_.trim)
+            val transformation = CodeGenerator.getValueFunction(derived(2))
+            if ( ! derivedSources.containsKey(derived(0))) {
+              derivedSources.put(derived(0), ArrayBuffer[Pair[String, ValueFunction]]())
             }
-            correlationSource.close()
-          } else {
-            correlations.append(parseCorrelation(tls, dimensions))
-          }
-        case "modelardb.engine" | "modelardb.storage" | "modelardb.interface" | "modelardb.time_zone" |
-             "modelardb.ingestors" | "modelardb.timestamp_column" | "modelardb.value_column" |
-             "modelardb.error_bound" | "modelardb.length_bound" | "modelardb.maximum_latency" |
-             "modelardb.sampling_interval" | "modelardb.batch_size" | "modelardb.dynamic_split_fraction"  |
-             "modelardb.csv.separator" | "modelardb.csv.header" | "modelardb.csv.date_format" | "modelardb.csv.locale" |
-             "modelardb.spark.streaming" =>
-          configuration.add(lineSplit(0), lineSplit(1).stripPrefix("'").stripSuffix("'"))
-        case _ =>
-          if (lineSplit(0).charAt(0) != '#') {
-            throw new UnsupportedOperationException("ModelarDB: unknown setting \"" + lineSplit(0) + "\" in config file")
-          }
+            derivedSources.get(derived(0)).append(new Pair(derived(1), transformation))
+          case "modelardb.dimensions" => //Purposely empty as modelardb.dimensions have already been parsed
+          case "modelardb.correlation" =>
+            //If the value is a file each line is considered a clause
+            val tls = lineSplit(1).trim
+            if (new File(tls).exists()) {
+              val correlationSource = Source.fromFile(tls)
+              for (line <- correlationSource.getLines()) {
+                correlations.append(parseCorrelation(line, dimensions))
+              }
+              correlationSource.close()
+            } else {
+              correlations.append(parseCorrelation(tls, dimensions))
+            }
+          case "modelardb.engine" | "modelardb.storage" | "modelardb.interface" | "modelardb.transfer" |
+               "modelardb.time_zone" | "modelardb.ingestors" | "modelardb.timestamp_column" | "modelardb.value_column" |
+               "modelardb.error_bound" | "modelardb.length_bound" | "modelardb.maximum_latency" |
+               "modelardb.sampling_interval" | "modelardb.batch_size" | "modelardb.dynamic_split_fraction" |
+               "modelardb.csv.separator" | "modelardb.csv.header" | "modelardb.csv.date_format" | "modelardb.csv.locale" |
+               "modelardb.spark.streaming" =>
+            configuration.add(lineSplit(0), lineSplit(1).stripPrefix("'").stripSuffix("'"))
+          case _ =>
+            if (lineSplit(0).nonEmpty) {
+              throw new IllegalArgumentException("ModelarDB: unknown setting \"" + lineSplit(0) + "\" in config file")
+            }
+        }
+      } catch {
+        case _: IndexOutOfBoundsException =>
+          throw new IllegalArgumentException("ModelarDB: missing argument for \"" + lineSplit(0) + "\" in config file")
       }
     }
     configFullSource.close()
@@ -253,12 +261,6 @@ object Main {
   }
 
   private def validate(configuration: Configuration): Configuration = {
-    /***
-     function validates the instance of Configuration class
-     1. validates the spark.streaming option
-     2.  ensures both included and user-defined model types all can be constructed without errors
-     */
-
     //Settings used outside core are validated to ensure their values are within the expected range
     if (configuration.getInteger("modelardb.spark.streaming", 0) <= 0) {
       throw new UnsupportedOperationException ("ModelarDB: modelardb.spark.streaming must be a positive number of seconds between micro-batches")
@@ -267,7 +269,6 @@ object Main {
     //Ensure both included and user-defined model types all can be constructed without errors
     val mtn = configuration.getModelTypeNames
     val mtids = Range(1, mtn.length + 1).toArray
-    //Returns the array of model type instances or throws exception
     ModelTypeFactory.getModelTypes(mtn, mtids, configuration.getErrorBound, configuration.getLengthBound)
     configuration
   }
