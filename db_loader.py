@@ -7,9 +7,9 @@ class MyDB:
     def __init__(
             self,
             db_file,
-            create_table_sql=[queries.CREATE_FILE_SIZE_TABLE_SQL, queries.CREATE_SEGMENT_SIZE_TABLE_SQL, queries.CREATE_ERROR_TABLE_SQL],
-            delete_table_sql=[queries.DROP_TABLE_SEGMENT_SIZE_TABLE_QUERY, queries.DROP_TABLE_FILE_SIZE_TABLE_QUERY, queries.DROP_TABLE_ERROR_TABLE_QUERY],
-            insert_query=[queries.INSERT_FILE_SIZE_QUERY, queries.INSERT_SEGMENT_SIZE_QUERY, queries.INSERT_ACTUAL_ERROR_QUERY]
+            create_table_sql=[queries.CREATE_FILE_SIZE_TABLE_SQL, queries.CREATE_SEGMENT_SIZE_TABLE_SQL, queries.CREATE_ERROR_TABLE_SQL, queries.CREATE_BADLY_COMPRESSED_SQL],
+            delete_table_sql=[queries.DROP_TABLE_SEGMENT_SIZE_TABLE_QUERY, queries.DROP_TABLE_FILE_SIZE_TABLE_QUERY, queries.DROP_TABLE_ERROR_TABLE_QUERY, queries.DROP_TABLE_CONS_GORILLA_SEGMENTS_QUERY],
+            insert_query=[queries.INSERT_FILE_SIZE_QUERY, queries.INSERT_SEGMENT_SIZE_QUERY, queries.INSERT_ACTUAL_ERROR_QUERY, queries.INSERT_CONS_GORILLA_SEGMENTS_QUERY]
     ):
         self.db_file = db_file
         self.create_table_sql = create_table_sql

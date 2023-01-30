@@ -25,15 +25,26 @@ segment integer
 
 CREATE_ERROR_TABLE_SQL: str = """
 CREATE TABLE IF NOT EXISTS error_table (
-id integer PRIMARY KEY,
-time_series varchar,
-error_bound double,
-average_error double,
-maximum_error double,
-difference_count integer,
-count integer,
-mean_absolute_error double
+    id integer PRIMARY KEY,
+    time_series varchar,
+    error_bound double,
+    average_error double,
+    maximum_error double,
+    difference_count integer,
+    count integer,
+    mean_absolute_error double
 );"""
+
+
+CREATE_BADLY_COMPRESSED_SQL: str = """
+CREATE TABLE IF NOT EXISTS consecutive_gorilla_segments (
+    tsid integer PRIMARY KEY,
+    time_series TEXT NOT NULL,
+    error_bound DOUBLE NOT NULL,
+    data TEXT NOT NULL 
+);
+"""
+
 
 CREATE_FILE_SIZE_TABLE_HOR_SQL: str = """
 CREATE TABLE IF NOT EXISTS file_size (
@@ -69,6 +80,8 @@ DROP_TABLE_FILE_SIZE_TABLE_QUERY = """DROP TABLE IF EXISTS file_size;"""
 
 DROP_TABLE_ERROR_TABLE_QUERY = """DROP TABLE IF EXISTS error_table;"""
 
+DROP_TABLE_CONS_GORILLA_SEGMENTS_QUERY = "DROP TABLE IF EXISTS consecutive_gorilla_segments"
+
 # Insert statements
 INSERT_SEGMENT_SIZE_QUERY = """
 INSERT INTO segment_size (id, time_series, error_bound, model_type, data_point, segment)
@@ -85,6 +98,11 @@ INSERT INTO error_table (id, time_series, error_bound, average_error, maximum_er
 VALUES (?,?,?,?,?,?,?,?);
 """
 
+INSERT_CONS_GORILLA_SEGMENTS_QUERY = """
+INSERT INTO consecutive_gorilla_segments (tsid, time_series, error_bound, data)
+VALUES (?,?,?,?)
+"""
+####################################################################
 INSERT_FILE_SIZE_QUERY_OLD = """
 INSERT INTO file_size (id, original_size, compressed_size_0, expected_0, compressed_size_1, expected_1,
  compressed_size_5, expected_5, compressed_size_10, expected_10)

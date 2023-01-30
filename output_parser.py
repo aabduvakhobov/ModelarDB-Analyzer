@@ -1,5 +1,12 @@
 import os
 import re
+import json
+from pathlib import Path
+from pyspark.sql import SparkSession
+import time
+
+import constants
+
 
 class OutputParser:
     """
@@ -173,4 +180,116 @@ class OutputParser:
                 output_dict[f"compressed_size_{error}"] = int(compressed) * 1024
                 output_dict[f"expected_size_{error}"] = int(expected) * 1024
         return output_dict
+    
 
+class SegmentAnalyzer:
+    """Class to read the compressed time series and retrieve badly compressed segments
+    """
+    def __init__(
+        self, 
+        ingested_path, 
+        error_bounds):
+        self.ingested_path = ingested_path
+        self.error_bounds = error_bounds
+
+
+    def run(self):
+        """main function that iterates through error_bounds and time_series to generate the list of tuples (TS, Error, Data)
+        """
+        final_output = []
+        for error in [float(i) for i in self.error_bounds.split(" ")]:
+            retries = 0
+            while retries < 5:
+                try:
+                    (models, time_series, segment) = self.__read_mdb(error)
+                except Exception as e:
+                    print(f"Raised an exception: {e}") 
+                    time.sleep(30)
+                    retries += 1
+                else:
+                    print("Segments DF was read!")
+                    break
+            # get time_series list from time_series\
+            ts = time_series.toPandas().iloc[:, [0,-1]].values
+            # iterate over segments to return list of badly compressed data points if they exist
+            output = self.__analyze(segment, ts, error)
+            final_output += output
+        return final_output
+    
+    
+    def __read_mdb(self, error):
+        # to read modelardb dataframe in ORC or Parquet depending on type 
+        spark = SparkSession.builder.appName("SegmentReadApp").master("local[*]").getOrCreate()
+        # now we have to read folders using passed error bound
+        file_format = self.__get_storage()
+   
+        # iterate over root directory to get the right sub dir
+        dir = [i for i in os.listdir(self.ingested_path) if i.startswith("modelardb") and i.__contains__("-" + str(error) + "-")][0]
+        # define full path
+        path = self.ingested_path + "/" + dir
+        # read data based on file format
+  
+        if file_format == "orc":   
+            segment = spark.read.orc(path + "/segment/*")
+            models = spark.read.orc(path + "/model_type.orc")
+            time_series = spark.read.orc(path + "/time_series.orc")
+        else:
+            segment = spark.read.parquet(path +  "/segment/*")
+            models = spark.read.parquet(path + "/model_type.parquet")
+            time_series = spark.read.parquet(path + "/time_series.parquet")
+    
+        return (models, time_series, segment)
+    
+    
+    def __analyze(self, segments, ts, error):
+        final_output = []
+        # ts_id[0]: tid, ts_id[1]: ts_name
+        for ts_id in ts:
+            df = segments.where(segments.gid == ts_id[0])
+            matches = self.__find_consecutive_indexes(df)
+            if matches != {}:
+                final_output.append((ts_id[0], ts_id[1], error, json.dumps(matches)))
+            else:
+                print("Nothing was discovered") #TODO: handle this properly
+        return final_output
+    
+    
+    # where are the indexes/timestamps?
+    # k: [i1, i2, i3, i4, i5 .... i_n]
+    def __find_consecutive_indexes(self, spark_df):
+        # models = df.mtid.to_list()
+        models = spark_df.select("mtid").collect()
+        length = len(models)
+        counter = 0
+        occurences = {}
+        
+        for i, val in enumerate(models):
+            v = val[0]
+            # if model_id == 4
+            if v == constants.GORILLA_ID and i+1 < length:
+                if v == models[i+1][0]:
+                    counter += 1
+                    
+                else:
+                    # if the key exists
+                    if occurences.get(f"{counter+1}") is not None:
+                        # storing only the fist index for sequence of counter
+                        occurences[f"{counter+1}"].append(i-counter)
+                    else:
+                        # storing only the fist index for sequence of counter
+                        occurences[f"{counter+1}"] = [i-counter]
+                    # flush the counter                
+                    counter = 0
+        del occurences["1"]
+        return occurences
+
+
+    def __get_storage(self):
+        with open(f"{Path.home()}/.modelardb.conf") as f:
+            lines = f.readlines()
+            line = [line for line in lines if line.__contains__("modelardb.storage") and not line.__contains__("#")][0]
+            file_format = "orc" if line.__contains__("orc") else "parquet"
+        return file_format
+     
+    
+    
