@@ -71,11 +71,10 @@ class OutputParser:
     # public methods
     def parse_file_size_ver(self):
         output_list = []
-        counter = 0
         for error in self.error_bound.split(" "):
             # actual file size comes in Bytes
             actual_size_before_compression = self.__estimate_dir()
-            theoretical_file_size = self.__file_size_estimate(error)
+            theoretical_file_size = 4 #self.__file_size_estimate(error)
             # output_list["original_data_size"] = file_size
             with open(self.output_path + f"/output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
@@ -86,14 +85,12 @@ class OutputParser:
                 metadata_size = int(re.findall("Metadata Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
                 gaps_size = int(re.findall("Gaps Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
                 total_expected_size = int(re.findall("Total Size:\s+[0-9]*\s+[A-Za-z]*", lines)[0].split(" ")[-2])
-            output_list.append((counter, error, theoretical_file_size, actual_size_before_compression, compressed, models_size, metadata_size, gaps_size, total_expected_size))
-            counter += 1
+            output_list.append((error, theoretical_file_size, actual_size_before_compression, compressed, models_size, metadata_size, gaps_size, total_expected_size))
         return output_list
 
     def parse_segment_size(self):
         output_list = []
         # used as a primary key in the table
-        counter = 0
         segments = {}
         datapoints = {}
         # iterate over error bounds set
@@ -124,11 +121,10 @@ class OutputParser:
                     for model in ["pmc", "swing", "gorilla"]:
                         output_list.append(
                             # now create collection of tuples in accordance with data tables
-                            (
-                                counter, signal[i], error, model, datapoints[model][i], segments[model][i]
+                            (   
+                                signal[i], error, model, datapoints[model][i], segments[model][i]
                             )
                         )
-                        counter += 1
 
         # print(output_list)
         return output_list
@@ -136,8 +132,6 @@ class OutputParser:
     # parses verifier... logs for error table
     def parse_errors(self):
         output_list = []
-        # used as a primary key in the table
-        counter = 0
         # iterate over error bounds set
         for error in self.error_bound.split(" "):
             # open the file
@@ -157,9 +151,8 @@ class OutputParser:
                     # the structure of a single row: (id, ts, error_bound, avg_error, max_error, diff_cnt, cnt, mae)
                     # order of metrics in verifier.. log: (generalCount, averageError, maxError, differenceCount, differenceSum, dataType, averageErrorWithZero)
                     output_list.append(
-                        (counter, ts_1, error, metrics[ts_1][1], metrics[ts_1][2], metrics[ts_1][3], metrics[ts_1][0], metrics[ts_1][6])
+                        (ts_1, error, metrics[ts_1][1], metrics[ts_1][2], metrics[ts_1][3], metrics[ts_1][0], metrics[ts_1][6])
                     )
-                    counter += 1
         return output_list
     
         # maybe two separate files would be parsed separately
@@ -196,30 +189,32 @@ class SegmentAnalyzer:
     def run(self):
         """main function that iterates through error_bounds and time_series to generate the list of tuples (TS, Error, Data)
         """
+        spark = SparkSession.builder.appName("SegmentReadApp").master("local[*]").getOrCreate()
         final_output = []
         for error in [float(i) for i in self.error_bounds.split(" ")]:
             retries = 0
             while retries < 5:
                 try:
-                    (models, time_series, segment) = self.__read_mdb(error)
+                    print(f"RUN: Error: {error}")
+                    (models, time_series, segment) = self.__read_mdb(spark, error)
                 except Exception as e:
                     print(f"Raised an exception: {e}") 
                     time.sleep(30)
                     retries += 1
                 else:
-                    print("Segments DF was read!")
+                    print(f"Segments-{error} DF was read!")
                     break
             # get time_series list from time_series\
             ts = time_series.toPandas().iloc[:, [0,-1]].values
             # iterate over segments to return list of badly compressed data points if they exist
+            print(f"RUN: error: {error}, TS: {ts}")
             output = self.__analyze(segment, ts, error)
             final_output += output
         return final_output
     
     
-    def __read_mdb(self, error):
+    def __read_mdb(self, spark, error):
         # to read modelardb dataframe in ORC or Parquet depending on type 
-        spark = SparkSession.builder.appName("SegmentReadApp").master("local[*]").getOrCreate()
         # now we have to read folders using passed error bound
         file_format = self.__get_storage()
    
@@ -228,7 +223,7 @@ class SegmentAnalyzer:
         # define full path
         path = self.ingested_path + "/" + dir
         # read data based on file format
-  
+        print(f"READ: reading from: {path}")
         if file_format == "orc":   
             segment = spark.read.orc(path + "/segment/*")
             models = spark.read.orc(path + "/model_type.orc")
@@ -245,6 +240,7 @@ class SegmentAnalyzer:
         final_output = []
         # ts_id[0]: tid, ts_id[1]: ts_name
         for ts_id in ts:
+            print(f"Analyze: Reading: {ts_id[1]}, Error: {error}")
             df = segments.where(segments.gid == ts_id[0])
             matches = self.__find_consecutive_indexes(df)
             if matches != {}:
@@ -280,7 +276,11 @@ class SegmentAnalyzer:
                         occurences[f"{counter+1}"] = [i-counter]
                     # flush the counter                
                     counter = 0
-        del occurences["1"]
+        
+        try:
+            del occurences["1"]
+        except Exception:
+            pass
         return occurences
 
 
