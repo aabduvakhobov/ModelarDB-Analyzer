@@ -94,7 +94,7 @@ class OutputParser:
         segments = {}
         datapoints = {}
         # iterate over error bounds set
-        for error in self.error_bound.split(" "):
+        for error in self.error_bound.split(" "):            
             # open the file
             with open(self.output_path + f"/output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
@@ -115,14 +115,19 @@ class OutputParser:
                 datapoints["swing"] = swing_data_points
                 segments["gorilla"] = gorilla_segments
                 datapoints["gorilla"] = gorilla_data_points
-
+                
+            with open(self.output_path + f"/verifier-{error}-0.0", "r") as f:
+                # fetch only the part after EVALUATION RESULT
+                veri_line = f.read().split("EVALUATION RESULT:")[1].split("[success]")[0].strip()
+                metrics = {}
                 # single row would look like:  id, ts, error_bound, model_type, segment
-                for i in range(len(signal)):
-                    for model in ["pmc", "swing", "gorilla"]:
+                for i,v in enumerate(signal):
+                    # fetch everything after the file name
+                    for model in zip(["pmc", "swing", "gorilla"], [7,8,9]) :
                         output_list.append(
                             # now create collection of tuples in accordance with data tables
                             (   
-                                signal[i], error, model, datapoints[model][i], segments[model][i]
+                                v, error, model[0] , datapoints[model[0]][i], segments[model[0]][i], metrics[v][model[1]]
                             )
                         )
 
@@ -149,7 +154,7 @@ class OutputParser:
                     metrics[ts_1] = re.findall(f"{ts_1}:\s+\[\((.+)\)\]", line)[0].split(",")
                     # now create collection of tuples in accordance with data tables
                     # the structure of a single row: (id, ts, error_bound, avg_error, max_error, diff_cnt, cnt, mae)
-                    # order of metrics in verifier.. log: (generalCount, averageError, maxError, differenceCount, differenceSum, dataType, averageErrorWithZero)
+                    # order of metrics in verifier.. log: (generalCount, averageError, maxError, differenceCount, differenceSum, dataType, averageErrorWithZero) + (seg_median1, seg_median2, seg_median3)
                     output_list.append(
                         (ts_1, error, metrics[ts_1][1], metrics[ts_1][2], metrics[ts_1][3], metrics[ts_1][0], metrics[ts_1][6])
                     )

@@ -20,7 +20,8 @@ time_series VARCHAR,
 error_bound DOUBLE,
 model_type TEXT,
 data_point INTEGER,
-segment INTEGER
+segment INTEGER,
+median_segment_length DOUBLE
 );"""
 
 CREATE_ERROR_TABLE_SQL: str = """
@@ -85,8 +86,8 @@ DROP_TABLE_CONS_GORILLA_SEGMENTS_QUERY = "DROP TABLE IF EXISTS consecutive_goril
 
 # Insert statements
 INSERT_SEGMENT_SIZE_QUERY = """
-INSERT INTO segment_size (time_series, error_bound, model_type, data_point, segment)
-VALUES (?,?,?,?,?);
+INSERT INTO segment_size (time_series, error_bound, model_type, data_point, segment, median_segment_length)
+VALUES (?,?,?,?,?,?);
 """
 
 INSERT_FILE_SIZE_QUERY = """
