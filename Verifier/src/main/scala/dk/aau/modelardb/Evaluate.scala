@@ -1,13 +1,14 @@
 package dk.aau.modelardb
 
 import org.apache.spark.SparkConf
-import dk.aau.modelardb.core.{Configuration, Partitioner, SegmentGroup, TimeSeriesGroup}
+import dk.aau.modelardb.core.{Configuration, Partitioner, SegmentGroup}
 import dk.aau.modelardb.storage.Storage
 import org.apache.spark.sql.SparkSession
 
 import java.io.IOException
 import java.util.logging.{FileHandler, Level, SimpleFormatter}
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object Evaluate {
 
@@ -20,18 +21,8 @@ object Evaluate {
     // TODO: case matching for storage type based on config file
     val configStorage = configuration.getStorage.split(":")(0).trim
     println(configStorage)
-    val storageMedium =
-      configStorage match {
-        case "parquet" => storage.asInstanceOf[dk.aau.modelardb.storage.ParquetStorage]
-        case "orc" => storage.asInstanceOf[dk.aau.modelardb.storage.ORCStorage]
-        case "cassandra" => storage.asInstanceOf[dk.aau.modelardb.storage.CassandraStorage]
-        case "jdbc" => storage.asInstanceOf[dk.aau.modelardb.storage.JDBCStorage]
-        case _ => throw new UnsupportedOperationException("CORE: Storage medium is not supported")
-      }
     //    val engine = configuration.getString("moderlardb.engine")
     //    sparkStorage.rootFolder = "/home/abduvoris/ModelarDB-Home/ModelarDB-dev/ModelarDB/modelardb/"
-
-    val engine = configuration.getString("modelardb.engine")
     //    val master = if (engine == "spark") "local[*]" else engine
     storage.storeMetadataAndInitializeCaches(configuration, Array())
     //-------------------------------------------------
@@ -62,14 +53,15 @@ object Evaluate {
     jobLogger
   }
   
-  private def verifyError(storage: Storage, configuration: Configuration): mutable.Map[String, (BigInt, Double, Double, Long, Double, String, Double)] = {
+  private def verifyError(storage: Storage, configuration: Configuration): mutable.Map[String, (BigInt, Double, Double, Long, Double, String, Double, Double, Double, Double)] = {
     if ( ! storage.isInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]) {
       throw new UnsupportedOperationException("CORE: verification is only supported for SparkStorage")
     }
     val sparkStorage = storage.asInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]
     //Detects the current data set used (EH / EP)
     val master = "local[*]"
-    val conf = new SparkConf().set("spark.driver.maxResultSize", "150g").set("spark.local.dir", "/srv/data5/abduvoris").set("spark.executor.memory", "20g")
+    val user_dir = System.getProperty("user.home")
+    val conf = new SparkConf().set("spark.driver.maxResultSize", "150g").set("spark.local.dir",  user_dir).set("spark.executor.memory", "20g")
     val ssb = SparkSession.builder.master(master).config(conf)
 
     val dimensions = configuration.getDimensions
@@ -109,7 +101,8 @@ object Evaluate {
     val maxSid = storage.getMaxTid
     //    val rows = sparkStorage.getSegmentGroups(spark, Array(org.apache.spark.sql.sources.EqualTo("gid", gsc(maxSid)))).collect()
     //    var generalCount: Long = 0
-    val metricsMap = mutable.Map.empty[String, (BigInt, Double, Double, Long, Double, String, Double)]
+    //Last 3 vals: median_pmc, median_swing, median_gorilla
+    val metricsMap = mutable.Map.empty[String, (BigInt, Double, Double, Long, Double, String, Double, Double, Double, Double)]
     //    Verify each data point
     var tid = 0
     while (tid < maxSid) {
@@ -121,6 +114,9 @@ object Evaluate {
       var generalCount: Long = 0
       var maxError = Double.MinValue
       var dataType: String = null
+
+      val segmentMedianLength = mutable.Map.empty[Int, ArrayBuffer[Int]];
+      Range.inclusive(2,4).foreach(m => segmentMedianLength += (m -> ArrayBuffer[Int]()))
       // timeSeries array starts with 0 index, so it comes before tid+=1
       val ts = timeSeries(tid) // this might a problem a later on when grouping is implemented during ingestion
       ts.open()
@@ -135,10 +131,11 @@ object Evaluate {
         if (segment.nonEmpty) {
           //Update the number of models in segments
           modelsSegment(row.getInt(3)) += 1
-
+          // datacount per segment
+          var segmentDataCount = 0;
           val it = segment(0).grid().iterator()
           while (it.hasNext && ts.hasNext) {
-            //          while (it.hasNext) {
+            segmentDataCount += 1;
             val a = it.next()
             val r = ts.next()
             val e = dk.aau.modelardb.core.utility.Static.percentageError(a.value, r.value)
@@ -162,29 +159,23 @@ object Evaluate {
             generalCount += 1
             if (generalCount == 1) dataType = f(r.value)
           }
+          segmentMedianLength(row.getInt(3)) += segmentDataCount
         }
       }
       //      Verifies that the approximated time series contained enough data points
       if (ts.hasNext) {
         throw new IllegalArgumentException(s"CORE: $generalCount is less than the size of ${ts.source}")
       }
-
+//      val medianSegmentLength = median(segmentMedianLength)
+      println("################################################################")
+      // sort keys from low to high
+      val res = mutable.Map.empty[Int, Double]
+      segmentMedianLength.foreach(x => res += (x._1 -> median(x._2)))
       val averageError = if (!(differenceSum/differenceCount).isNaN) differenceSum/differenceCount else 0D
       val averageErrorWithZero = if (!(differenceSum/generalCount).isNaN) differenceSum/generalCount else 0D
-      metricsMap(ts.source) = (generalCount, averageError, maxError, differenceCount, differenceSum, dataType, averageErrorWithZero)
+      metricsMap(ts.source) = (generalCount, averageError, maxError, differenceCount, differenceSum, dataType, averageErrorWithZero, res(2), res(3), res(4))
     }
     metricsMap
-  }
-
-
-  private def tidToGidMapper(storage: Storage): mutable.HashMap[Integer, Integer] = {
-    val tidToGid = mutable.HashMap[Integer, Integer]()
-    val timeSeriesMap =  storage.getTimeSeries
-    for ((tid, metadata) <- timeSeriesMap) {
-      val tsg = metadata(2).asInstanceOf[Int]
-      tidToGid(tid) = tsg
-    }
-    tidToGid
   }
 
   private def f[T](v:T) = v match {
@@ -197,4 +188,10 @@ object Evaluate {
     case _ => v.getClass.getName
   }
 
+
+  private def median(s: Seq[Int]): Double = {
+    if (s.length < 1) return 0
+    val (lower, upper) = s.sortWith(_ < _).splitAt(s.size / 2)
+    if (s.size % 2 == 0) (lower.last + upper.head) / 2 else upper.head
+  }
 }
