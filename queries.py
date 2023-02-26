@@ -47,7 +47,16 @@ CREATE TABLE IF NOT EXISTS consecutive_gorilla_segments (
 );
 """
 
+CREATE_ACTUAL_ERROR_HISTOGRAM_TABLE = """
+CREATE TABLE IF NOT EXISTS actual_error_histogram (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    error_bound DOUBLE,
+    bin DOUBLE NOT NULL,
+    value INTEGER NOT NULL
+)
+"""
 
+#-----------------------------------------------------OLD ONES----------------------------------------------------
 CREATE_FILE_SIZE_TABLE_HOR_SQL: str = """
 CREATE TABLE IF NOT EXISTS file_size (
 id integer PRIMARY KEY AUTOINCREMENT,
@@ -84,6 +93,7 @@ DROP_TABLE_ERROR_TABLE_QUERY = """DROP TABLE IF EXISTS error_table;"""
 
 DROP_TABLE_CONS_GORILLA_SEGMENTS_QUERY = "DROP TABLE IF EXISTS consecutive_gorilla_segments;"
 
+DROP_TABLE_ACTUAL_ERROR_HIST = "DROP TABLE IF EXISTS actual_error_histogram;"
 # Insert statements
 INSERT_SEGMENT_SIZE_QUERY = """
 INSERT INTO segment_size (time_series, error_bound, model_type, data_point, segment, median_segment_length)
@@ -103,6 +113,11 @@ VALUES (?,?,?,?,?,?,?);
 INSERT_CONS_GORILLA_SEGMENTS_QUERY = """
 INSERT INTO consecutive_gorilla_segments (tsid, time_series, error_bound, data)
 VALUES (?,?,?,?);
+"""
+
+INSERT_ACTUAL_ERROR_HISTOGRAM_QUERY = """
+INSERT INTO actual_error_histogram (error_bound, bin, value)
+VALUES (?,?,?);
 """
 ####################################################################
 INSERT_FILE_SIZE_QUERY_OLD = """

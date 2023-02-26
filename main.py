@@ -19,11 +19,11 @@ if __name__ == '__main__':
 
     db = MyDB("./output.db")
     conn = db.create_connection()
-    # db.create_table(conn, delete=True)
+    db.create_table(conn, delete=True)
     db.create_table(conn)
 
     # iterate over bunch of files. use regex to get required elements and write them to db
-    # run_script(constants.MODELARDB_PATH, constants.ERROR_BOUND, constants.VERIFIER_PATH, constants.OUTPUT_PATH)
+    run_script(constants.MODELARDB_PATH, constants.ERROR_BOUND, constants.VERIFIER_PATH, constants.OUTPUT_PATH)
 
     parser = OutputParser(constants.DATA_PATH, constants.OUTPUT_PATH, constants.ERROR_BOUND)
 
@@ -32,6 +32,9 @@ if __name__ == '__main__':
     segments_output_list = parser.parse_segment_size()
 
     errors_output_list = parser.parse_errors()
+    
+    actual_error_histogram_list = parser.parse_actual_error_histogram()
+    
     # segment_analyser = SegmentAnalyzer(constants.OUTPUT_PATH, constants.ERROR_BOUND)    
     # cons_gorilla_segments = segment_analyser.run()
     # now insert data to db
@@ -43,13 +46,16 @@ if __name__ == '__main__':
 
     for data in errors_output_list:
         db.insert_metrics(conn, data, 2)
+        
+    for data in actual_error_histogram_list:
+        db.insert_metrics(conn, data, 4)
     
     
-    #now insert data for badly compressed segments
+    # now insert data for badly compressed segments
     # for data in cons_gorilla_segments:
     #     db.insert_metrics(conn, data, 3)
     
-
+    print("Segment table")
     db.select_table(conn, "segment_size")
     print("File_size and actual error table: ")
     db.select_table(conn, "file_size")
@@ -57,7 +63,10 @@ if __name__ == '__main__':
     print("Error table:")
     db.select_table(conn, "error_table")
     
-    print("Consecutive segments")
-    db.select_table(conn, "consecutive_gorilla_segments")
+    # print("Consecutive segments")
+    # db.select_table(conn, "consecutive_gorilla_segments")
+    
+    print("Actual Error Histogram")
+    db.select_table(conn, "actual_error_histogram")
 
     conn.close()

@@ -107,7 +107,8 @@ object Evaluate {
     val metricsMap = mutable.Map.empty[String, (BigInt, Double, Double, Long, Double, String, Double, Double, Double, Double)]
     //    Verify each data point
     var tid = 0
-    val hist = new Histogram(10, error)
+    // small hack when error_bound is 0
+    val hist = if (error!=0) new Histogram(10, error) else new Histogram(10, 1)
     while (tid < maxSid) {
       
       //Foreach sid verify that all data points are within the error bound and compute the average error
@@ -199,16 +200,16 @@ object Evaluate {
 
   class Histogram(nBins: Int, e: Double) {
     require(nBins != 0)
-    require(e != 0)
+    
     val (max,min) = (e,0)
     val Epsilon = 0.000001
     val binWidth = (max - min) / nBins + Epsilon
     val bounds = (1 to nBins).map { x => min + binWidth * x }.toList
     var negative:Double = _
     // to store counts for each bucket
-    var buckets = ArrayBuffer.fill(nBins)(0)
+    var buckets = ArrayBuffer.fill[Long](nBins)(0L)
 
-    def add(value: Double): Histogram = synchronized {
+    def add(value: Double) {
       if (value < 0)
         negative += 1
       else {
@@ -216,7 +217,6 @@ object Evaluate {
         if (bucket >= buckets.length) buckets(buckets.length - 1) += 1
         else buckets(bucket) += 1
       }
-      this
     }
 
     def bound_size(): Int = {
@@ -226,7 +226,7 @@ object Evaluate {
     def totalRequests(): Long = {buckets.sum}
 
     override def toString: String = {
-      var hist = Map.empty[Double, Int]
+      var hist = Map.empty[Double, Long]
       buckets.zipWithIndex.foreach{case(elem, idx) => hist+= (bounds(idx) -> elem)}
       hist.toSeq.sortBy(_._1).mkString(", ")
     }

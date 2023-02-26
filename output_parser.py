@@ -39,15 +39,6 @@ class OutputParser:
         # fetches the needed records: 1st and last elements of the list
         # pattern matching for suitable types
         # sums them up at the end
-        def object_size_estimate(obj):
-            if obj == "Short":
-                return 2
-            elif obj == "Int" or obj == "Float":
-                return 4
-            elif obj == "Double" or obj == "Long" or obj == "BigInt":
-                return 8
-            else:
-                raise TypeError("Unknown type identified")
         with open(self.output_path + f"/verifier-{error}-0.0", "r") as f:
             # fetch only the part after EVALUATION RESULT
             line = f.read().split("EVALUATION RESULT")[1]
@@ -62,9 +53,9 @@ class OutputParser:
                 # must also include the size of each timestamp: 32bit (epoch time in seconds) or 64 bit (milliseconds)
                 # as you are ingesting multivariate ts, you should consider ts col only once
                 if byte_sum == 0:
-                    byte_sum += int(num_rows[0]) * (object_size_estimate(num_rows[-2]) + 8)
+                    byte_sum += int(num_rows[0]) * (4 + 8)
                 else:
-                    byte_sum += int(num_rows[0]) * object_size_estimate(num_rows[-2])
+                    byte_sum += int(num_rows[0]) * 4
                 # pattern matching method for different variables types and their vals
         return byte_sum
 
@@ -74,7 +65,7 @@ class OutputParser:
         for error in self.error_bound.split(" "):
             # actual file size comes in Bytes
             actual_size_before_compression = self.__estimate_dir()
-            theoretical_file_size = 4 #self.__file_size_estimate(error)
+            theoretical_file_size = self.__file_size_estimate(error)
             # output_list["original_data_size"] = file_size
             with open(self.output_path + f"/output-{error}-0.0", "r") as f:
                 lines = f.read().rstrip()
@@ -123,6 +114,7 @@ class OutputParser:
                 # single row would look like:  id, ts, error_bound, model_type, segment
                 for i,v in enumerate(signal):
                     # fetch everything after the file name
+                    metrics[v] = re.findall(f"{v}:\s+\[\((.+)\)\]", veri_line)[0].split(",")
                     for model in zip(["pmc", "swing", "gorilla"], [7,8,9]) :
                         output_list.append(
                             # now create collection of tuples in accordance with data tables
@@ -179,6 +171,22 @@ class OutputParser:
                 output_dict[f"expected_size_{error}"] = int(expected) * 1024
         return output_dict
     
+    
+    def parse_actual_error_histogram(self):
+        output_list = []
+        for error in self.error_bound.split(" "):
+            with open(self.output_path + f"/verifier-{error}-0.0", "r") as f:
+                veri_line = f.read().split("EVALUATION RESULT:")[0].split("Dataset error histogram: ")[1]
+            # parse the list
+            hist_tuple = eval(veri_line)
+            for t in hist_tuple:
+                output_list.append(
+                    (error, t[0], t[1]) 
+                    )
+        return output_list
+            # hist_tuple.map(lambda x: output_list.append(x))
+            
+            
 
 class SegmentAnalyzer:
     """Class to read the compressed time series and retrieve badly compressed segments
