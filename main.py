@@ -1,5 +1,5 @@
 import subprocess
-import constants
+import configparser
 
 from db_loader import MyDB
 from output_parser import OutputParser, SegmentAnalyzer
@@ -21,11 +21,13 @@ if __name__ == '__main__':
     conn = db.create_connection()
     db.create_table(conn, delete=True)
     db.create_table(conn)
-
+    
+    config = configparser.ConfigParser()
+    config.read("config.cfg")
     # iterate over bunch of files. use regex to get required elements and write them to db
-    run_script(constants.MODELARDB_PATH, constants.ERROR_BOUND, constants.VERIFIER_PATH, constants.OUTPUT_PATH)
+    run_script(config["DEFAULT"]["MODELARDB_PATH"], config["INGESTION"]["ERROR_BOUND"], config["DEFAULT"]["VERIFIER_PATH"], config["INGESTION"]["OUTPUT_PATH"])
 
-    parser = OutputParser(constants.DATA_PATH, constants.OUTPUT_PATH, constants.ERROR_BOUND)
+    parser = OutputParser(config["INGESTION"]["DATA_PATH"], config["INGESTION"]["OUTPUT_PATH"], config["INGESTION"]["ERROR_BOUND"])
 
     file_size_list = parser.parse_file_size_ver()
    
