@@ -1,13 +1,15 @@
 package dk.aau.modelardb
 
 import org.apache.spark.SparkConf
-import dk.aau.modelardb.core.{Configuration, Partitioner, SegmentGroup, TimeSeriesGroup}
+import dk.aau.modelardb.core.{Configuration, Partitioner, SegmentGroup}
 import dk.aau.modelardb.storage.Storage
 import org.apache.spark.sql.SparkSession
 
 import java.io.IOException
 import java.util.logging.{FileHandler, Level, SimpleFormatter}
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
 
 object Evaluate {
 
@@ -20,24 +22,15 @@ object Evaluate {
     // TODO: case matching for storage type based on config file
     val configStorage = configuration.getStorage.split(":")(0).trim
     println(configStorage)
-    val storageMedium =
-      configStorage match {
-        case "parquet" => storage.asInstanceOf[dk.aau.modelardb.storage.ParquetStorage]
-        case "orc" => storage.asInstanceOf[dk.aau.modelardb.storage.ORCStorage]
-        case "cassandra" => storage.asInstanceOf[dk.aau.modelardb.storage.CassandraStorage]
-        case "jdbc" => storage.asInstanceOf[dk.aau.modelardb.storage.JDBCStorage]
-        case _ => throw new UnsupportedOperationException("CORE: Storage medium is not supported")
-      }
     //    val engine = configuration.getString("moderlardb.engine")
     //    sparkStorage.rootFolder = "/home/abduvoris/ModelarDB-Home/ModelarDB-dev/ModelarDB/modelardb/"
-
-    val engine = configuration.getString("modelardb.engine")
     //    val master = if (engine == "spark") "local[*]" else engine
     storage.storeMetadataAndInitializeCaches(configuration, Array())
     //-------------------------------------------------
     //variables for storing errors
-    val metrics = verifyError(storage, configuration) // pattern matching over here to choose engine type
-    val message = new StringBuilder("EVALUATION RESULT:")
+    val (metrics, histString) = verifyError(storage, configuration) // pattern matching over here to choose engine type
+
+    val message = new StringBuilder(s"Dataset error histogram: ${histString} \nEVALUATION RESULT:")
     // iterate over the map and print out as: TS: [metric1, metric2, ...]
     metrics.foreach(m => message ++= s"\n${m._1}: [${m._2}]")
     println(message)
@@ -62,14 +55,15 @@ object Evaluate {
     jobLogger
   }
   
-  private def verifyError(storage: Storage, configuration: Configuration): mutable.Map[String, (BigInt, Double, Double, Long, Double, String, Double)] = {
+  private def verifyError(storage: Storage, configuration: Configuration): (mutable.Map[String, (BigInt, Double, Double, Long, Double, String, Double, Double, Double, Double)], String) = {
     if ( ! storage.isInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]) {
       throw new UnsupportedOperationException("CORE: verification is only supported for SparkStorage")
     }
     val sparkStorage = storage.asInstanceOf[dk.aau.modelardb.engines.spark.SparkStorage]
     //Detects the current data set used (EH / EP)
     val master = "local[*]"
-    val conf = new SparkConf().set("spark.driver.maxResultSize", "150g").set("spark.local.dir", "/srv/data5/abduvoris").set("spark.executor.memory", "20g")
+    val user_dir = System.getProperty("user.home")
+    val conf = new SparkConf().set("spark.driver.maxResultSize", "150g").set("spark.local.dir",  user_dir).set("spark.executor.memory", "20g")
     val ssb = SparkSession.builder.master(master).config(conf)
 
     val dimensions = configuration.getDimensions
@@ -109,9 +103,12 @@ object Evaluate {
     val maxSid = storage.getMaxTid
     //    val rows = sparkStorage.getSegmentGroups(spark, Array(org.apache.spark.sql.sources.EqualTo("gid", gsc(maxSid)))).collect()
     //    var generalCount: Long = 0
-    val metricsMap = mutable.Map.empty[String, (BigInt, Double, Double, Long, Double, String, Double)]
+    //Last 3 vals: median_pmc, median_swing, median_gorilla
+    val metricsMap = mutable.Map.empty[String, (BigInt, Double, Double, Long, Double, String, Double, Double, Double, Double)]
     //    Verify each data point
     var tid = 0
+    // small hack when error_bound is 0
+    val hist = if (error!=0) new Histogram(10, error) else new Histogram(10, 1)
     while (tid < maxSid) {
       
       //Foreach sid verify that all data points are within the error bound and compute the average error
@@ -121,6 +118,9 @@ object Evaluate {
       var generalCount: Long = 0
       var maxError = Double.MinValue
       var dataType: String = null
+
+      val segmentMedianLength = mutable.Map.empty[Int, ArrayBuffer[Int]];
+      Range.inclusive(2,4).foreach(m => segmentMedianLength += (m -> ArrayBuffer[Int]()))
       // timeSeries array starts with 0 index, so it comes before tid+=1
       val ts = timeSeries(tid) // this might a problem a later on when grouping is implemented during ingestion
       ts.open()
@@ -135,14 +135,15 @@ object Evaluate {
         if (segment.nonEmpty) {
           //Update the number of models in segments
           modelsSegment(row.getInt(3)) += 1
-
+          // datacount per segment
+          var segmentDataCount = 0;
           val it = segment(0).grid().iterator()
           while (it.hasNext && ts.hasNext) {
-            //          while (it.hasNext) {
+            segmentDataCount += 1;
             val a = it.next()
             val r = ts.next()
             val e = dk.aau.modelardb.core.utility.Static.percentageError(a.value, r.value)
-
+            hist.add(e)
             if ((a.tid  != r.tid) || (a.timestamp != r.timestamp) || (e > error)) {
               throw new IllegalArgumentException(s"CORE: (A) $a and (R) $r with error $e cannot be verified")
             }
@@ -162,29 +163,21 @@ object Evaluate {
             generalCount += 1
             if (generalCount == 1) dataType = f(r.value)
           }
+          segmentMedianLength(row.getInt(3)) += segmentDataCount
         }
       }
       //      Verifies that the approximated time series contained enough data points
       if (ts.hasNext) {
         throw new IllegalArgumentException(s"CORE: $generalCount is less than the size of ${ts.source}")
       }
-
+      // sort keys from low to high
+      val res = mutable.Map.empty[Int, Double]
+      segmentMedianLength.foreach(x => res += (x._1 -> median(x._2)))
       val averageError = if (!(differenceSum/differenceCount).isNaN) differenceSum/differenceCount else 0D
       val averageErrorWithZero = if (!(differenceSum/generalCount).isNaN) differenceSum/generalCount else 0D
-      metricsMap(ts.source) = (generalCount, averageError, maxError, differenceCount, differenceSum, dataType, averageErrorWithZero)
+      metricsMap(ts.source) = (generalCount, averageError, maxError, differenceCount, differenceSum, dataType, averageErrorWithZero, res(2), res(3), res(4))
     }
-    metricsMap
-  }
-
-
-  private def tidToGidMapper(storage: Storage): mutable.HashMap[Integer, Integer] = {
-    val tidToGid = mutable.HashMap[Integer, Integer]()
-    val timeSeriesMap =  storage.getTimeSeries
-    for ((tid, metadata) <- timeSeriesMap) {
-      val tsg = metadata(2).asInstanceOf[Int]
-      tidToGid(tid) = tsg
-    }
-    tidToGid
+    (metricsMap, hist.toString)
   }
 
   private def f[T](v:T) = v match {
@@ -197,4 +190,48 @@ object Evaluate {
     case _ => v.getClass.getName
   }
 
+
+  private def median(s: Seq[Int]): Double = {
+    if (s.length < 1) return 0
+    val (lower, upper) = s.sortWith(_ < _).splitAt(s.size / 2)
+    if (s.size % 2 == 0) (lower.last + upper.head) / 2 else upper.head
+  }
+
+
+  class Histogram(nBins: Int, e: Double) {
+    require(nBins != 0)
+    
+    val (max,min) = (e,0)
+    val Epsilon = 0.000001
+    val binWidth = (max - min) / nBins + Epsilon
+    val bounds = (1 to nBins).map { x => min + binWidth * x }.toList
+    var negative:Double = _
+    // to store counts for each bucket
+    var buckets = ArrayBuffer.fill[Long](nBins)(0L)
+
+    def add(value: Double) {
+      if (value < 0)
+        negative += 1
+      else {
+        val bucket = (value/binWidth).toInt
+        if (bucket >= buckets.length) buckets(buckets.length - 1) += 1
+        else buckets(bucket) += 1
+      }
+    }
+
+    def bound_size(): Int = {
+      bounds.size
+    }
+
+    def totalRequests(): Long = {buckets.sum}
+
+    override def toString: String = {
+      var hist = Map.empty[Double, Long]
+      buckets.zipWithIndex.foreach{case(elem, idx) => hist+= (bounds(idx) -> elem)}
+      hist.toSeq.sortBy(_._1).mkString(", ")
+    }
+  }
+
 }
+
+
