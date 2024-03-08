@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# scipt for downsampling the dataset and then ingesting it with ModelarDB on the the cloud
-
-echo "here we are starting"
 # a string list of number of data points to aggregate into 1
 WINDOWS=($1)
 

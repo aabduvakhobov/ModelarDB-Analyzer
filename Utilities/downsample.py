@@ -27,7 +27,10 @@ def dataset_list(path):
         for filename in filenames:
             # print(dirname+filename)
             dataset_list.append(dirname + filename)
-    return dataset_list
+    for dirname, _, filenames in os.walk(path):
+        for filename in filenames:
+            dataset_list.append(dirname + filename)
+           return dataset_list
 
 def downsample_by_last_value(db_path, save_path, aggregate_factor):
     # reading dataset
@@ -38,6 +41,11 @@ def downsample_by_last_value(db_path, save_path, aggregate_factor):
     df = df.resample(rule=f"{SAMPLING_INTERVAL*aggregate_factor}{TIME_UNITS}", on=TIMESTAMP_COL, label="right", origin="start", closed="right").last()
     df.reset_index().dropna().to_orc(save_path+ts)
     print(f"{db_path} was saved at {save_path} \nwith {int(aggregate_factor)*SAMPLING_INTERVAL} sampling rate")
+
+    df = df.resample(rule=f"{SAMPLING_INTERVAL*aggregate_factor}{TIME_UNITS}", on=TIMESTAMP_COL, label="right", origin="start", closed="right").last()
+    df.reset_index().dropna().to_orc(save_path+ts)
+    print(f"{db_path} was saved at {save_path} \nwith {int(aggregate_factor)*SAMPLING_INTERVAL} sampling rate")
+
 
 def downsample_by_mean(db_path, save_path, aggregate_factor):
     # reading dataset
@@ -58,9 +66,7 @@ if __name__== "__main__":
     # SAVE_PATH_FOR_LAST_AGGREGATE = sys.argv[3]
     MULTIPLE = int(sys.argv[3])
     # METHOD = sys.argv[4]
-    
     ts_list = dataset_list(PATH)
-    # print(ts_list[0])
     # downsampling of datasets
     for ts in ts_list:
         logging.info(f"{ts} being aggregated")
