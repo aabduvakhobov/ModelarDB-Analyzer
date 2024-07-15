@@ -13,4 +13,5 @@ To run ModelarDB in the edge-to-cloud scenario:
   2. Make sure that cloud's conf file is on a server transfer mode\* like: *modelardb.transfer server*
   3. Make sure that edge's conf file has cloud's IP address for transfer: *modelardb.transfer xxx.xx.xx.xx*
   4. Start the cloud and the edge.
+
 \* Make sure that hostname ip resolves to what is shown in the conf file. Otherwise it needs to be changed from */etc/hosts* 
