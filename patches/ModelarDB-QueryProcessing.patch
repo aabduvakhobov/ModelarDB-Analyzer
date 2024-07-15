@@ -1,0 +1,132 @@
+diff --git a/src/main/scala/dk/aau/modelardb/engines/h2/H2.scala b/src/main/scala/dk/aau/modelardb/engines/h2/H2.scala
+index 0d93028..da827f5 100644
+--- a/src/main/scala/dk/aau/modelardb/engines/h2/H2.scala
++++ b/src/main/scala/dk/aau/modelardb/engines/h2/H2.scala
+@@ -26,7 +26,7 @@ import org.h2.table.TableFilter
+ import org.h2.value.{ValueInt, ValueTimestamp}
+ 
+ import org.apache.arrow.flight.{FlightServer, Location}
+-import org.codehaus.jackson.map.util.ISO8601Utils
++import org.apache.hadoop.shaded.org.codehaus.jackson.map.util.ISO8601Utils
+ 
+ import java.sql.{DriverManager, Timestamp}
+ import java.util.concurrent.{CountDownLatch, Executors}
+@@ -132,7 +132,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) extends QueryEngine
+         case "server" =>
+           //Initialize Data Transfer Server
+           h2storage.storeMetadataAndInitializeCaches(configuration, Array[TimeSeriesGroup]())
+-          val location = new Location("grpc://0.0.0.0:" + port)
++          val location = new Location("grpc://172.19.20.42:" + port)
+           val producer = new RemoteStorageFlightProducer(configuration, h2storage, port)
+           val executor = Executors.newFixedThreadPool(ingestors + 1) //Plus one so ingestors threads perform ingestion
+           this.flightServer = FlightServer.builder(this.rootAllocator, location, producer).executor(executor).build()
+diff --git a/src/main/scala/dk/aau/modelardb/engines/spark/RemoteStorageReceiver.scala b/src/main/scala/dk/aau/modelardb/engines/spark/RemoteStorageReceiver.scala
+index 61e9584..f10d28c 100644
+--- a/src/main/scala/dk/aau/modelardb/engines/spark/RemoteStorageReceiver.scala
++++ b/src/main/scala/dk/aau/modelardb/engines/spark/RemoteStorageReceiver.scala
+@@ -26,7 +26,6 @@ import org.apache.spark.streaming.receiver.Receiver
+ 
+ import org.h2.table.TableFilter
+ 
+-import java.net.InetAddress
+ import java.nio.charset.StandardCharsets
+ import java.sql.Timestamp
+ import java.util.concurrent.Executors
+@@ -61,7 +60,7 @@ class RemoteStorageReceiver(masterIPWithPort: String, port: Int) extends Receive
+ 
+     //Flight Server
+     this.flightServer = {
+-      val location = new Location("grpc://0.0.0.0:" + port) //Configuration and port are never used
++      val location = new Location("grpc://172.19.20.42:" + port) //Configuration and port are never used
+       val producer = new RemoteStorageFlightProducer(null, this.h2storage, -1)
+       FlightServer.builder(this.rootAllocator, location, producer).executor(Executors.newCachedThreadPool()).build()
+     }
+@@ -70,7 +69,8 @@ class RemoteStorageReceiver(masterIPWithPort: String, port: Int) extends Receive
+     //Register this with the master
+     val location = new Location("grpc://" + masterIPWithPort)
+     val flightClient = FlightClient.builder().location(location).allocator(this.rootAllocator).build()
+-    val receiverLocation = InetAddress.getLocalHost.getHostAddress + ":" + port
++    //val receiverLocation = InetAddress.getLocalHost.getHostAddress + ":" + port
++    val receiverLocation = "172.19.20.42" + ":" + port
+     val action = new Action("register", receiverLocation.getBytes(StandardCharsets.UTF_8))
+     flightClient.doAction(action).hasNext //Ensures action is performed
+     flightClient.close()
+@@ -85,4 +85,4 @@ class RemoteStorageReceiver(masterIPWithPort: String, port: Int) extends Receive
+   private var rootAllocator: BufferAllocator = _
+   private var flightServer: FlightServer = _
+   private var h2storage: H2Storage = _
+-}
+\ No newline at end of file
++}
+diff --git a/src/main/scala/dk/aau/modelardb/engines/spark/Spark.scala b/src/main/scala/dk/aau/modelardb/engines/spark/Spark.scala
+index e550849..66c74b8 100644
+--- a/src/main/scala/dk/aau/modelardb/engines/spark/Spark.scala
++++ b/src/main/scala/dk/aau/modelardb/engines/spark/Spark.scala
+@@ -31,7 +31,6 @@ import org.apache.spark.sql.{DataFrame, DataFrameReader, Row, SparkSession, sour
+ import org.apache.spark.streaming.receiver.Receiver
+ import org.apache.spark.streaming.{Seconds, StreamingContext}
+ 
+-import java.net.InetAddress
+ import java.sql.Timestamp
+ 
+ import scala.collection.mutable
+@@ -82,6 +81,9 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) extends Qu
+       .set("spark.streaming.unpersist", "false")
+       .set("spark.sql.parquet.outputTimestampType", "TIMESTAMP_MICROS")
+       .set("spark.streaming.stopGracefullyOnShutdown", "true")
++      .set("spark.executor.memory", "10g")
++      .set("spark.driver.cores", "10")
++      .set("spark.driver.memory", "10g")
+     val ssb = SparkSession.builder.master(master).config(conf)
+ 
+     //Checks if the Storage instance provided has native Apache Spark integration
+@@ -107,7 +109,7 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) extends Qu
+         case "server" =>
+           //Initialize Data Transfer Server (Master)
+           sparkStorage.storeMetadataAndInitializeCaches(configuration, Array[TimeSeriesGroup]())
+-          val location = new Location("grpc://0.0.0.0:" + port)
++          val location = new Location("grpc://172.19.20.42:" + port)
+           val producer = new RemoteStorageFlightProducer(configuration, sparkStorage.asInstanceOf[H2Storage], port)
+           val executor = configuration.getExecutorService
+           this.flightServer = FlightServer.builder(this.rootAllocator, location, producer).executor(executor).build()
+@@ -116,8 +118,9 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) extends Qu
+ 
+           //Initialize Data Transfer Server (Workers)
+           Spark.initialize(spark, configuration, sparkStorage, Range(0, 0)) //Temporary segments are not transferred
+-          val master = InetAddress.getLocalHost().getHostAddress() + ":" + port
+-          setupStream(spark, Range(0, ingestors).map(_=> new RemoteStorageReceiver(master, port)).toArray, true)
++          //val master = InetAddress.getLocalHost().getHostAddress() + ":" + port
++          val master = "172.19.20.42" + ":" + port
++          setupStream(spark, Range(0, ingestors).map(_=> new RemoteStorageReceiver(master, 50000)).toArray, true)
+         case _ => //If data transfer is enabled to StorageFactory have wrapped SparkStorage with a RemoteStorage instance
+           //Initialize Local Ingestion to SparkStorage (Possible RemoteStorage)
+           val firstGid = sparkStorage.getMaxGid + 1
+diff --git a/src/main/scala/dk/aau/modelardb/remote/RemoteStorageFlightProducer.scala b/src/main/scala/dk/aau/modelardb/remote/RemoteStorageFlightProducer.scala
+index 3a0926c..a2bb1c8 100644
+--- a/src/main/scala/dk/aau/modelardb/remote/RemoteStorageFlightProducer.scala
++++ b/src/main/scala/dk/aau/modelardb/remote/RemoteStorageFlightProducer.scala
+@@ -21,7 +21,6 @@ import dk.aau.modelardb.engines.h2.H2Storage
+ import org.apache.arrow.flight.{Action, ActionType, Criteria, FlightDescriptor, FlightInfo, FlightProducer, FlightStream, PutResult, Result, Ticket}
+ import org.apache.arrow.vector.{BigIntVector, Float4Vector, Float8Vector, IntVector, VarBinaryVector, VarCharVector, VectorSchemaRoot}
+ 
+-import java.net.InetAddress
+ import java.nio.ByteBuffer
+ import java.nio.charset.StandardCharsets
+ import java.util.concurrent.locks.ReentrantReadWriteLock
+@@ -103,7 +102,8 @@ class RemoteStorageFlightProducer(configuration: Configuration, h2Storage: H2Sto
+         this.remoteLock.writeLock().lock()
+         val remote = if (this.remoteStorageReceivers.isEmpty) {
+           //Only the master is available for receiving segments
+-          InetAddress.getLocalHost.getHostAddress + ":" + port
++          //InetAddress.getLocalHost.getHostAddress + ":" + port
++          "172.19.20.42" + ":" + port
+         } else {
+           //Distributed receivers are available for receiving segments
+           val expectedLoadFromClient = ByteBuffer.wrap(action.getBody).getInt
+@@ -149,4 +149,4 @@ class RemoteStorageFlightProducer(configuration: Configuration, h2Storage: H2Sto
+   /** Instance Variables **/  //Tracks the currently operating RemoteStorageReceivers and their workload
+   private val remoteLock = new ReentrantReadWriteLock()
+   private val remoteStorageReceivers = mutable.HashMap[String, Int]()
+-}
+\ No newline at end of file
++}
