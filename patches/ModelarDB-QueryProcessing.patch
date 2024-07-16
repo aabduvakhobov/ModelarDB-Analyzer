@@ -1,76 +1,189 @@
+diff --git a/build.sbt b/build.sbt
+index cb8001d..7d04b31 100644
+--- a/build.sbt
++++ b/build.sbt
+@@ -4,6 +4,7 @@ scalaVersion := "2.12.15"
+ scalacOptions ++= Seq("-opt:l:inline", "-opt-inline-from:<sources>", "-feature", "-deprecation", "-Xlint:_")
+ 
+ libraryDependencies ++= Seq(
++  "com.github.luben" % "zstd-jni" % "1.5.0-4",
+   /* Code Generation */
+   "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+ 
+diff --git a/src/main/java/dk/aau/modelardb/core/utility/Logger.java b/src/main/java/dk/aau/modelardb/core/utility/Logger.java
+index 3381e8b..f9cdafe 100644
+--- a/src/main/java/dk/aau/modelardb/core/utility/Logger.java
++++ b/src/main/java/dk/aau/modelardb/core/utility/Logger.java
+@@ -21,6 +21,7 @@ import dk.aau.modelardb.core.models.ModelType;
+ import java.io.IOException;
+ import java.io.Serializable;
+ import java.util.Map;
++import java.util.logging.*;
+ 
+ public class Logger implements Serializable {
+ 
+@@ -108,12 +109,26 @@ public class Logger implements Serializable {
+ 
+         long finalizedCounter = this.finalizedSegmentCounter.values().stream().mapToLong(Long::longValue).sum();
+         sb.append("\nFinalized Segment Counter - Total: ").append(finalizedCounter).append('\n');
++        if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.PMC_MeanModelType")){
++            sb.append("-- ").append("dk.aau.modelardb.core.models.PMC_MeanModelType").append(" | Count: ").append("0").append('\n');
++        } else if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.SwingFilterModelType")){
++            sb.append("-- ").append("dk.aau.modelardb.core.models.SwingFilterModelType").append(" | Count: ").append("0").append('\n');
++        } else if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.FacebookGorillaModelType")) {
++            sb.append("-- ").append("dk.aau.modelardb.core.models.FacebookGorillaModelType").append(" | Count: ").append("0").append('\n');
++        }
+         for (Map.Entry<String, Long> e : this.finalizedSegmentCounter.entrySet()) {
+             sb.append("-- ").append(e.getKey()).append(" | Count: ").append(e.getValue()).append('\n');
+         }
+ 
+         finalizedCounter = this.finalizedDataPointCounter.values().stream().mapToLong(Long::longValue).sum();
+         sb.append("\nFinalized Segment DataPoint Counter - Total: ").append(finalizedCounter).append('\n');
++        if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.PMC_MeanModelType")){
++            sb.append("-- ").append("dk.aau.modelardb.core.models.PMC_MeanModelType").append(" | DataPoint: ").append("0").append('\n');
++        } else if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.SwingFilterModelType")){
++            sb.append("-- ").append("dk.aau.modelardb.core.models.SwingFilterModelType").append(" | DataPoint: ").append("0").append('\n');
++        } else if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.FacebookGorillaModelType")){
++            sb.append("-- ").append("dk.aau.modelardb.core.models.FacebookGorillaModelType").append(" | DataPoint: ").append("0").append('\n');
++        }
+         for (Map.Entry<String, Long> e : this.finalizedDataPointCounter.entrySet()) {
+             sb.append("-- ").append(e.getKey()).append(" | DataPoint: ").append(e.getValue()).append('\n');
+         }
+@@ -124,6 +139,9 @@ public class Logger implements Serializable {
+         sb.append("\nCompression Ratio: ").append((16.0 * finalizedCounter) / finalizedTotalSize).append('\n');
+         sb.append("---------------------------------------------------------");
+         System.out.println(sb);
++
++        java.util.logging.Logger logger = getJobLogger();
++        logger.info(sb.toString());
+     }
+ 
+     public void printWorkingSetResult() {
+@@ -143,9 +161,49 @@ public class Logger implements Serializable {
+         System.out.println("---------------------------------------------------------");
+         printAlignedDebugVariables("Total Size", getTotalSize(), cs);
+         System.out.println("---------------------------------------------------------");
++
++        java.util.logging.Logger logger = getJobLogger();
++        StringBuilder sb = new StringBuilder("Time: " + getTimeSpan());
++        sb.append("\nSegments: " + finalizedSegmentCounter);
++        sb.append("\nData Points: " + finalizedPointCounter);
++        sb.append(stringAlignedDebugVariables("\nData Points Size", finalizedPointCounter * 16.0F, cs));
++        sb.append(stringAlignedDebugVariables("\nMetadata Size", this.finalizedMetadataSize, cs));
++        sb.append(stringAlignedDebugVariables("\nModels Size", this.finalizedModelsSize, cs));
++        sb.append(stringAlignedDebugVariables("\nGaps Size", this.finalizedGapsSize, cs));
++        sb.append(stringAlignedDebugVariables("\nTotal Size", getTotalSize(), cs));
++        logger.info(sb.toString());
+     }
+ 
+     /** Private Methods **/
++    private java.util.logging.Logger getJobLogger() {
++        if(jobLogger == null) {
++            jobLogger =  java.util.logging.Logger.getLogger("ResultLogs");
++            try {
++                fh = new FileHandler("./IngestionLog.log");
++                fh.setFormatter(new SimpleFormatter());
++                jobLogger.addHandler(fh);
++            } catch (SecurityException e) {
++                throw new RuntimeException(e);
++            } catch (IOException e) {
++                throw new RuntimeException(e);
++            }
++            jobLogger.setLevel(Level.INFO);
++        }
++        return jobLogger;
++    }
++
++
++    private String stringAlignedDebugVariables(String variableName, double sizeInBytes, int cs) {
++        StringBuilder sb = new StringBuilder();
++        sb.append(String.format("%16s: %" + cs + ".0f B | %" + cs + ".3f KB | %" + cs + ".3f MB",
++                variableName,
++                sizeInBytes,
++                sizeInBytes / 1024.0F,
++                sizeInBytes / 1024.0F / 1024.0F));
++        return sb.toString();
++    }
++
++
+     private void printAlignedDebugVariables(String variableName, double sizeInBytes, int cs) {
+         System.out.format("%16s: %" + cs + ".0f B | %" + cs + ".3f KB | %" + cs + ".3f MB\n",
+                 variableName,
+@@ -176,4 +234,7 @@ public class Logger implements Serializable {
+ 
+     private final java.util.HashMap<String, Long> finalizedSegmentCounter = new java.util.HashMap<>();
+     private final java.util.HashMap<String, Long> finalizedDataPointCounter = new java.util.HashMap<>();
++
++    private FileHandler fh;
++    private static java.util.logging.Logger jobLogger = null;
+ }
+diff --git a/src/main/scala/dk/aau/modelardb/Main.scala b/src/main/scala/dk/aau/modelardb/Main.scala
+index e22821d..7cd2760 100755
+--- a/src/main/scala/dk/aau/modelardb/Main.scala
++++ b/src/main/scala/dk/aau/modelardb/Main.scala
+@@ -39,7 +39,7 @@ object Main {
+   def main(args: Array[String]): Unit = {
+     //DEBUG: prints all log messages to System.out
+     //org.apache.log4j.BasicConfigurator.configure()
+-
++    println(f"Starting the Edge Server: ${System.currentTimeMillis()}")
+     //ModelarDB checks args(0) for a config and uses $HOME/.modelardb.conf as a fallback
+     val fallback = System.getProperty("user.home") + "/.modelardb.conf"
+     val configPath: String = if (args.length == 1) {
+@@ -59,13 +59,16 @@ object Main {
+ 
+     /* Storage */
+     val storage = StorageFactory.getStorage(configuration)
+-
++    println(f"Starting engine: ${System.currentTimeMillis()}")
+     /* Engine */
+     EngineFactory.startEngine(configuration, storage)
+ 
+     /* Cleanup */
+     storage.close()
++    println(f"Storage closed: ${System.currentTimeMillis()}")
++
+     RemoteUtilities.getRootAllocator(configuration).close() //Explicitly closed to log memory leaks
++    println(f"Shutting down the server: ${System.currentTimeMillis()}")
+   }
+ 
+   /** Private Methods **/
 diff --git a/src/main/scala/dk/aau/modelardb/engines/h2/H2.scala b/src/main/scala/dk/aau/modelardb/engines/h2/H2.scala
-index 0d93028..da827f5 100644
+index 0d93028..e63bbde 100644
 --- a/src/main/scala/dk/aau/modelardb/engines/h2/H2.scala
 +++ b/src/main/scala/dk/aau/modelardb/engines/h2/H2.scala
-@@ -26,7 +26,7 @@ import org.h2.table.TableFilter
+@@ -19,14 +19,14 @@ import dk.aau.modelardb.core._
+ import dk.aau.modelardb.core.utility.{Logger, SegmentFunction, Static}
+ import dk.aau.modelardb.engines.{EngineUtilities, QueryEngine}
+ import dk.aau.modelardb.remote.{ArrowResultSet, QueryInterface, RemoteStorageFlightProducer, RemoteUtilities}
+-
+ import org.h2.expression.condition.{Comparison, ConditionAndOr, ConditionInConstantSet}
+ import org.h2.expression.{Expression, ExpressionColumn, ValueExpression}
+ import org.h2.table.TableFilter
  import org.h2.value.{ValueInt, ValueTimestamp}
- 
+-
  import org.apache.arrow.flight.{FlightServer, Location}
 -import org.codehaus.jackson.map.util.ISO8601Utils
 +import org.apache.hadoop.shaded.org.codehaus.jackson.map.util.ISO8601Utils
++//import org.codehaus.jackson.map.util.ISO8601Utils
++//import com.fasterxml.jackson.databind.util.ISO8601Utils
  
  import java.sql.{DriverManager, Timestamp}
  import java.util.concurrent.{CountDownLatch, Executors}
-@@ -132,7 +132,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) extends QueryEngine
-         case "server" =>
-           //Initialize Data Transfer Server
-           h2storage.storeMetadataAndInitializeCaches(configuration, Array[TimeSeriesGroup]())
--          val location = new Location("grpc://0.0.0.0:" + port)
-+          val location = new Location("grpc://172.19.20.42:" + port)
-           val producer = new RemoteStorageFlightProducer(configuration, h2storage, port)
-           val executor = Executors.newFixedThreadPool(ingestors + 1) //Plus one so ingestors threads perform ingestion
-           this.flightServer = FlightServer.builder(this.rootAllocator, location, producer).executor(executor).build()
-diff --git a/src/main/scala/dk/aau/modelardb/engines/spark/RemoteStorageReceiver.scala b/src/main/scala/dk/aau/modelardb/engines/spark/RemoteStorageReceiver.scala
-index 61e9584..f10d28c 100644
---- a/src/main/scala/dk/aau/modelardb/engines/spark/RemoteStorageReceiver.scala
-+++ b/src/main/scala/dk/aau/modelardb/engines/spark/RemoteStorageReceiver.scala
-@@ -26,7 +26,6 @@ import org.apache.spark.streaming.receiver.Receiver
+@@ -56,7 +56,7 @@ class H2(configuration: Configuration, h2storage: H2Storage) extends QueryEngine
+     startIngestion(dimensions)
  
- import org.h2.table.TableFilter
+     //Interface
+-    QueryInterface.start(configuration, this)
++//    QueryInterface.start(configuration, this)
  
--import java.net.InetAddress
- import java.nio.charset.StandardCharsets
- import java.sql.Timestamp
- import java.util.concurrent.Executors
-@@ -61,7 +60,7 @@ class RemoteStorageReceiver(masterIPWithPort: String, port: Int) extends Receive
- 
-     //Flight Server
-     this.flightServer = {
--      val location = new Location("grpc://0.0.0.0:" + port) //Configuration and port are never used
-+      val location = new Location("grpc://172.19.20.42:" + port) //Configuration and port are never used
-       val producer = new RemoteStorageFlightProducer(null, this.h2storage, -1)
-       FlightServer.builder(this.rootAllocator, location, producer).executor(Executors.newCachedThreadPool()).build()
-     }
-@@ -70,7 +69,8 @@ class RemoteStorageReceiver(masterIPWithPort: String, port: Int) extends Receive
-     //Register this with the master
-     val location = new Location("grpc://" + masterIPWithPort)
-     val flightClient = FlightClient.builder().location(location).allocator(this.rootAllocator).build()
--    val receiverLocation = InetAddress.getLocalHost.getHostAddress + ":" + port
-+    //val receiverLocation = InetAddress.getLocalHost.getHostAddress + ":" + port
-+    val receiverLocation = "172.19.20.42" + ":" + port
-     val action = new Action("register", receiverLocation.getBytes(StandardCharsets.UTF_8))
-     flightClient.doAction(action).hasNext //Ensures action is performed
-     flightClient.close()
-@@ -85,4 +85,4 @@ class RemoteStorageReceiver(masterIPWithPort: String, port: Int) extends Receive
-   private var rootAllocator: BufferAllocator = _
-   private var flightServer: FlightServer = _
-   private var h2storage: H2Storage = _
--}
-\ No newline at end of file
-+}
+     //Shutdown
+     waitUntilIngestionIsDone()
 diff --git a/src/main/scala/dk/aau/modelardb/engines/spark/Spark.scala b/src/main/scala/dk/aau/modelardb/engines/spark/Spark.scala
-index e550849..66c74b8 100644
+index e550849..d65e7a1 100644
 --- a/src/main/scala/dk/aau/modelardb/engines/spark/Spark.scala
 +++ b/src/main/scala/dk/aau/modelardb/engines/spark/Spark.scala
-@@ -31,7 +31,6 @@ import org.apache.spark.sql.{DataFrame, DataFrameReader, Row, SparkSession, sour
- import org.apache.spark.streaming.receiver.Receiver
- import org.apache.spark.streaming.{Seconds, StreamingContext}
- 
--import java.net.InetAddress
- import java.sql.Timestamp
- 
- import scala.collection.mutable
-@@ -82,6 +81,9 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) extends Qu
+@@ -82,6 +82,9 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) extends Qu
        .set("spark.streaming.unpersist", "false")
        .set("spark.sql.parquet.outputTimestampType", "TIMESTAMP_MICROS")
        .set("spark.streaming.stopGracefullyOnShutdown", "true")
@@ -80,53 +193,12 @@ index e550849..66c74b8 100644
      val ssb = SparkSession.builder.master(master).config(conf)
  
      //Checks if the Storage instance provided has native Apache Spark integration
-@@ -107,7 +109,7 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) extends Qu
-         case "server" =>
-           //Initialize Data Transfer Server (Master)
-           sparkStorage.storeMetadataAndInitializeCaches(configuration, Array[TimeSeriesGroup]())
--          val location = new Location("grpc://0.0.0.0:" + port)
-+          val location = new Location("grpc://172.19.20.42:" + port)
-           val producer = new RemoteStorageFlightProducer(configuration, sparkStorage.asInstanceOf[H2Storage], port)
-           val executor = configuration.getExecutorService
-           this.flightServer = FlightServer.builder(this.rootAllocator, location, producer).executor(executor).build()
-@@ -116,8 +118,9 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) extends Qu
- 
+@@ -117,7 +120,7 @@ class Spark(configuration: Configuration, sparkStorage: SparkStorage) extends Qu
            //Initialize Data Transfer Server (Workers)
            Spark.initialize(spark, configuration, sparkStorage, Range(0, 0)) //Temporary segments are not transferred
--          val master = InetAddress.getLocalHost().getHostAddress() + ":" + port
+           val master = InetAddress.getLocalHost().getHostAddress() + ":" + port
 -          setupStream(spark, Range(0, ingestors).map(_=> new RemoteStorageReceiver(master, port)).toArray, true)
-+          //val master = InetAddress.getLocalHost().getHostAddress() + ":" + port
-+          val master = "172.19.20.42" + ":" + port
 +          setupStream(spark, Range(0, ingestors).map(_=> new RemoteStorageReceiver(master, 50000)).toArray, true)
          case _ => //If data transfer is enabled to StorageFactory have wrapped SparkStorage with a RemoteStorage instance
            //Initialize Local Ingestion to SparkStorage (Possible RemoteStorage)
            val firstGid = sparkStorage.getMaxGid + 1
-diff --git a/src/main/scala/dk/aau/modelardb/remote/RemoteStorageFlightProducer.scala b/src/main/scala/dk/aau/modelardb/remote/RemoteStorageFlightProducer.scala
-index 3a0926c..a2bb1c8 100644
---- a/src/main/scala/dk/aau/modelardb/remote/RemoteStorageFlightProducer.scala
-+++ b/src/main/scala/dk/aau/modelardb/remote/RemoteStorageFlightProducer.scala
-@@ -21,7 +21,6 @@ import dk.aau.modelardb.engines.h2.H2Storage
- import org.apache.arrow.flight.{Action, ActionType, Criteria, FlightDescriptor, FlightInfo, FlightProducer, FlightStream, PutResult, Result, Ticket}
- import org.apache.arrow.vector.{BigIntVector, Float4Vector, Float8Vector, IntVector, VarBinaryVector, VarCharVector, VectorSchemaRoot}
- 
--import java.net.InetAddress
- import java.nio.ByteBuffer
- import java.nio.charset.StandardCharsets
- import java.util.concurrent.locks.ReentrantReadWriteLock
-@@ -103,7 +102,8 @@ class RemoteStorageFlightProducer(configuration: Configuration, h2Storage: H2Sto
-         this.remoteLock.writeLock().lock()
-         val remote = if (this.remoteStorageReceivers.isEmpty) {
-           //Only the master is available for receiving segments
--          InetAddress.getLocalHost.getHostAddress + ":" + port
-+          //InetAddress.getLocalHost.getHostAddress + ":" + port
-+          "172.19.20.42" + ":" + port
-         } else {
-           //Distributed receivers are available for receiving segments
-           val expectedLoadFromClient = ByteBuffer.wrap(action.getBody).getInt
-@@ -149,4 +149,4 @@ class RemoteStorageFlightProducer(configuration: Configuration, h2Storage: H2Sto
-   /** Instance Variables **/  //Tracks the currently operating RemoteStorageReceivers and their workload
-   private val remoteLock = new ReentrantReadWriteLock()
-   private val remoteStorageReceivers = mutable.HashMap[String, Int]()
--}
-\ No newline at end of file
-+}
