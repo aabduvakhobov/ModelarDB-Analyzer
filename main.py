@@ -1,10 +1,10 @@
 import subprocess
 import configparser
 
-from db_loader import MyDB
-from output_parser import OutputParser, SegmentAnalyzer
+from utils.db_loader import MyDB
+from utils.output_parser import OutputParser, SegmentAnalyzer
 
-import conf_change
+import utils.conf_change as conf_change
 
 
 def run_script(modelardb_path, error_bound, verifier_path, output_path):

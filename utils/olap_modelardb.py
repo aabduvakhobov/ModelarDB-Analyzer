@@ -7,14 +7,14 @@ import csv
 import os
 
 
-DATASET = "PCD"
-MDB_VALUE_COLUMN_NAME = "controller"
+DATASET = "WTM"
+MDB_VALUE_COLUMN_NAME = "location"
     
 queries_per_tid_datapoint = {
     "COUNT" : "SELECT COUNT(*) FROM datapoint where tid={}",
     "SUM" : "SELECT SUM(value) FROM datapoint where tid={}",
-    "MAX" : "SELECT MAX(value) FROM datapoint where tid={} AND value <> 0",
-    "MIN" : "SELECT MIN(value) FROM datapoint where tid={} AND value <> 0",
+    "MAX" : "SELECT MAX(value) FROM datapoint where tid={} AND value > 0",
+    "MIN" : "SELECT MIN(value) FROM datapoint where tid={} AND value > 0",
     "AVG" : "SELECT AVG(value) FROM datapoint where tid={}",
     "STD" : "SELECT STD(value) FROM datapoint where tid={}",
     'ALL' : "SELECT value FROM datapoint where tid={}",
