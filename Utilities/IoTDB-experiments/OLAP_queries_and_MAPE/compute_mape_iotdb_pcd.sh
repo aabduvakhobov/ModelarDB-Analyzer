@@ -9,7 +9,8 @@ precision_values="1 2 3 4 5 6"
 save_path='/path/to/save/results'
 
 test_type="query_error" # options: mape or query_error
-dataset_name="PCD"
+# Can be used with both PCD and WTM datasets
+dataset_name="WTM"
 higher_than_zero="False"
 exclude_queries='None'
 

@@ -16,7 +16,7 @@ index cb8001d..53ddc19 100644
    /* Storage Layer */
    //H2 is a full RDBMS with both a query engine and a storage layer
 diff --git a/src/main/java/dk/aau/modelardb/core/utility/Logger.java b/src/main/java/dk/aau/modelardb/core/utility/Logger.java
-index 3381e8b..f9cdafe 100644
+index 3381e8b..7d06914 100644
 --- a/src/main/java/dk/aau/modelardb/core/utility/Logger.java
 +++ b/src/main/java/dk/aau/modelardb/core/utility/Logger.java
 @@ -21,6 +21,7 @@ import dk.aau.modelardb.core.models.ModelType;
@@ -27,15 +27,17 @@ index 3381e8b..f9cdafe 100644
  
  public class Logger implements Serializable {
  
-@@ -108,12 +109,26 @@ public class Logger implements Serializable {
+@@ -108,12 +109,30 @@ public class Logger implements Serializable {
  
          long finalizedCounter = this.finalizedSegmentCounter.values().stream().mapToLong(Long::longValue).sum();
          sb.append("\nFinalized Segment Counter - Total: ").append(finalizedCounter).append('\n');
 +        if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.PMC_MeanModelType")){
 +            sb.append("-- ").append("dk.aau.modelardb.core.models.PMC_MeanModelType").append(" | Count: ").append("0").append('\n');
-+        } else if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.SwingFilterModelType")){
++        }
++        if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.SwingFilterModelType")){
 +            sb.append("-- ").append("dk.aau.modelardb.core.models.SwingFilterModelType").append(" | Count: ").append("0").append('\n');
-+        } else if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.FacebookGorillaModelType")) {
++        }
++        if (!this.finalizedSegmentCounter.containsKey("dk.aau.modelardb.core.models.FacebookGorillaModelType")) {
 +            sb.append("-- ").append("dk.aau.modelardb.core.models.FacebookGorillaModelType").append(" | Count: ").append("0").append('\n');
 +        }
          for (Map.Entry<String, Long> e : this.finalizedSegmentCounter.entrySet()) {
@@ -46,15 +48,17 @@ index 3381e8b..f9cdafe 100644
          sb.append("\nFinalized Segment DataPoint Counter - Total: ").append(finalizedCounter).append('\n');
 +        if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.PMC_MeanModelType")){
 +            sb.append("-- ").append("dk.aau.modelardb.core.models.PMC_MeanModelType").append(" | DataPoint: ").append("0").append('\n');
-+        } else if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.SwingFilterModelType")){
++        } 
++        if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.SwingFilterModelType")){
 +            sb.append("-- ").append("dk.aau.modelardb.core.models.SwingFilterModelType").append(" | DataPoint: ").append("0").append('\n');
-+        } else if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.FacebookGorillaModelType")){
++        } 
++        if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.FacebookGorillaModelType")){
 +            sb.append("-- ").append("dk.aau.modelardb.core.models.FacebookGorillaModelType").append(" | DataPoint: ").append("0").append('\n');
 +        }
          for (Map.Entry<String, Long> e : this.finalizedDataPointCounter.entrySet()) {
              sb.append("-- ").append(e.getKey()).append(" | DataPoint: ").append(e.getValue()).append('\n');
          }
-@@ -124,6 +139,9 @@ public class Logger implements Serializable {
+@@ -124,6 +143,9 @@ public class Logger implements Serializable {
          sb.append("\nCompression Ratio: ").append((16.0 * finalizedCounter) / finalizedTotalSize).append('\n');
          sb.append("---------------------------------------------------------");
          System.out.println(sb);
@@ -64,7 +68,7 @@ index 3381e8b..f9cdafe 100644
      }
  
      public void printWorkingSetResult() {
-@@ -143,9 +161,49 @@ public class Logger implements Serializable {
+@@ -143,9 +165,49 @@ public class Logger implements Serializable {
          System.out.println("---------------------------------------------------------");
          printAlignedDebugVariables("Total Size", getTotalSize(), cs);
          System.out.println("---------------------------------------------------------");
@@ -114,7 +118,7 @@ index 3381e8b..f9cdafe 100644
      private void printAlignedDebugVariables(String variableName, double sizeInBytes, int cs) {
          System.out.format("%16s: %" + cs + ".0f B | %" + cs + ".3f KB | %" + cs + ".3f MB\n",
                  variableName,
-@@ -176,4 +234,7 @@ public class Logger implements Serializable {
+@@ -176,4 +238,7 @@ public class Logger implements Serializable {
  
      private final java.util.HashMap<String, Long> finalizedSegmentCounter = new java.util.HashMap<>();
      private final java.util.HashMap<String, Long> finalizedDataPointCounter = new java.util.HashMap<>();

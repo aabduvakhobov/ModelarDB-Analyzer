@@ -2,12 +2,14 @@ import os
 import re
 import json
 from pathlib import Path
-from pyspark.sql import SparkSession
 import time
 
-import constants
+import configparser
 
 
+config = configparser.ConfigParser()
+config.read("config.cfg")
+    
 class OutputParser:
     """
     docstring:
@@ -112,7 +114,7 @@ class OutputParser:
                 veri_line = f.read().split("EVALUATION RESULT:")[1].split("[success]")[0].strip()
                 metrics = {}
                 # single row would look like:  id, ts, error_bound, model_type, segment
-                for i,v in enumerate(signal):
+                for i, v in enumerate(signal):
                     # fetch everything after the file name
                     metrics[v] = re.findall(f"{v}:\s+\[\((.+)\)\]", veri_line)[0].split(",")
                     for model in zip(["pmc", "swing", "gorilla"], [7,8,9]) :
@@ -200,6 +202,7 @@ class SegmentAnalyzer:
 
 
     def run(self):
+        from pyspark.sql import SparkSession
         """main function that iterates through error_bounds and time_series to generate the list of tuples (TS, Error, Data)
         """
         spark = SparkSession.builder.appName("SegmentReadApp").master("local[*]").getOrCreate()
@@ -273,9 +276,9 @@ class SegmentAnalyzer:
         occurences = {}
         
         for i, val in enumerate(models):
-            v = val[0]
+            v = int(val[0])
             # if model_id == 4
-            if v == constants.GORILLA_ID and i+1 < length:
+            if v == int(config['MODEL_TYPES']['GORILLA_ID']) and i+1 < length:
                 if v == models[i+1][0]:
                     counter += 1
                     

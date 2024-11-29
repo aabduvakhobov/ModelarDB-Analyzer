@@ -30,7 +30,7 @@ def dataset_list(path):
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
             dataset_list.append(dirname + filename)
-           return dataset_list
+    return dataset_list
 
 def downsample_by_last_value(db_path, save_path, aggregate_factor):
     # reading dataset

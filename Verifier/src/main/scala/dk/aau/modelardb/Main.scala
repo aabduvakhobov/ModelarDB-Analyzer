@@ -36,7 +36,7 @@ object Main {
 
     //ModelarDB checks args(0) for a config and uses $HOME/.modelardb.conf as a fallback
     val fallback = System.getProperty("user.home") + "/.modelardb.conf"
-    val configPath: String = if (args.length == 1) {
+    val configPath: String = if (args.length > 0) {
       args(0)
     } else if (new java.io.File(fallback).exists) {
       fallback

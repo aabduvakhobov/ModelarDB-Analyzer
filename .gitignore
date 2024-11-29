@@ -14,3 +14,5 @@ EvaluationTool.drawio.png
 /output.db
 /outputs
 Utilities/IoTDB-experiments/IoTB-Ingest-Transfer-Edge/target/
+modelardb/
+modelardb_data/

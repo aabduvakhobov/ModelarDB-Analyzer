@@ -8,11 +8,11 @@ CORRS=(0.0)
 #DB=cassandra
 DB=file
 #DB=h2
-
-CONF_PATH=$HOME
-MODELARDB_PATH=$1
-VERIFIER_PATH=$3
-COPY_DB_PATH=$4
+current_dir=$(pwd)
+MODELARDB_PATH=$current_dir/$1
+VERIFIER_PATH=$current_dir/$3
+COPY_DB_PATH=$current_dir/$4
+CONF_PATH=$MODELARDB_PATH/modelardb.conf
 
 # also include OUTPUT_PATH
 if [[ $DB == cassandra ]]
@@ -143,16 +143,16 @@ do
       #cp $HOME/Programs/modelardb-azure.conf $HOME/Programs/modelardb.conf
 
       # Set the user defined correlation and error bound
-      sed -i -e "s/error_bound\s[0-9\.?0-9]\+/error_bound $e/g" $CONF_PATH/.modelardb.conf
-      sed -i -e "s/(correlation)/$c/g" $CONF_PATH/.modelardb.conf
+      sed -i -e "s/error_bound\s[0-9\.?0-9]\+/error_bound $e/g" $CONF_PATH
+      sed -i -e "s/(correlation)/$c/g" $CONF_PATH
 
       # Ingest the data set with the correlation specified in corrs
       echo "Ingesting Dataset with: $e"
-      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt run 2> /dev/null #| tee $HOME/Downloads/output-"$e"-"$c"
+      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $CONF_PATH" 2> /dev/null #| tee $HOME/Downloads/output-"$e"-"$c"
       #echo 'dk.aau.modelardb.Main.main(Array())' | ~/Programs/spark-3.1.1-bin-hadoop3.2/bin/spark-shell --driver-memory $MEMORY --executor-memory $MEMORY --packages com.datastax.spark:spark-cassandra-connector_2.12:3.0.1 --jars ModelarDB-assembly-1.0.0.jar | tee $HOME/Downloads/output-"$e"-"$c"
       # cd to verifier and tee the result and cd back to modelardb home
       cd $VERIFIER_PATH
-      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $HOME $MODELARDB_PATH/" 2> /dev/null # | tee $HOME/Downloads/verifier-"$e"-"$c"
+      SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $CONF_PATH $MODELARDB_PATH/" 2> /dev/null # | tee $HOME/Downloads/verifier-"$e"-"$c"
       cd $MODELARDB_PATH
       # Measure the amount of data stored in the database
       measure-database "$e" "$c"
