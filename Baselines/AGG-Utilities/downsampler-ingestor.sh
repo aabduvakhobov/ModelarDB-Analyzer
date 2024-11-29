@@ -12,13 +12,12 @@ data_path=$3
 downsampler_py=$4
 echo "saving in: $base_path"
 for s in "${WINDOWS[@]}"
-do 
+do
 	echo "downsampling $s"
 	mkdir $base_path/${s}x
 	#mkdir $base_path/${s}x/last
 	mkdir $base_path/${s}x/mean
 	python3 $downsampler_py $data_path $base_path/${s}x/mean/ $s
-	echo "$s was downsampled" 
- 
+	echo "$s was downsampled"
 done
 

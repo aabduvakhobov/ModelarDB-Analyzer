@@ -2,9 +2,15 @@ import pandas as pd
 import pyarrow.orc as orc
 import pyarrow.compute as pc
 import numpy as np
-
+import configparser
 import sys
 import json
+
+
+def read_configs(config_path = "../../config.cfg"):
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    return config
 
 
 def get_files(path):
@@ -105,14 +111,8 @@ def compute_max_min_median_rqe(results_dict, queries, si):
     return aggregated_results_dict
 
 
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        raise Exception("Usage: script.py dataset_name higher_than_zero_bool")
-
-    dataset = sys.argv[1]
-    # only applicable for the following queries: STD, AVG, SUM and MEDIAN
-    higher_than_zero = bool(sys.argv[2])
-    
+def main(dataset:str, higher_than_zero:bool, save_dir:str):
+    config = read_configs()
     QUERIES = ['MIN', 'MAX', 'AVG', 'SUM', 'MEDIAN', 'STD']
     if dataset == "PCD":
         # path to raw datasets
@@ -126,8 +126,13 @@ if __name__ == "__main__":
         # path to aggregates
         aggregate_path = ''
         si = [3, 5, 15, 30, 300]
-
-        
+    elif dataset == 'WTM':
+        # path to raw dataset
+        print('../../' + config['DATA']['WTM_UNIVARIATE'] )
+        original_path = '../../' + config['DATA']['WTM_UNIVARIATE']
+        # path to aggregates
+        aggregate_path = config['AGG']['AGGREGATES_SAVE_PATH']
+        si = [3, 5, 15, 30, 300]
     # the names of the files in both the raw and aggregated data are the same
     files = get_files(original_path)
     results_dict = {}
@@ -144,8 +149,20 @@ if __name__ == "__main__":
     
     aggregated_results_per_si = compute_max_min_median_rqe(results_dict, QUERIES, si)
     # dump everything into json files
-    with open(f"{dataset}-AGG-extended-rqe.json", "w") as outfile:
+    with open(f"{save_dir}/{dataset}-AGG-extended-rqe.json", "w") as outfile:
         json.dump(results_dict, outfile)
-    with open(f"{dataset}-AGG-aggregated-rqe.json", "w") as f:
+    with open(f"{save_dir}/{dataset}-AGG-aggregated-rqe.json", "w") as f:
         json.dump(aggregated_results_per_si, f)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 4:
+        raise Exception("Usage: script.py dataset_name higher_than_zero_bool output_save_dir")
+
+    dataset = sys.argv[1]
+    # only applicable for the following queries: STD, AVG, SUM and MEDIAN
+    higher_than_zero = bool(sys.argv[2])
+    output_save_dir = sys.argv[3]
+    
+    main(dataset, higher_than_zero, output_save_dir)
     
