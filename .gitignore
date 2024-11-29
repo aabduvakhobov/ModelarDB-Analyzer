@@ -16,3 +16,4 @@ EvaluationTool.drawio.png
 Utilities/IoTDB-experiments/IoTB-Ingest-Transfer-Edge/target/
 modelardb/
 modelardb_data/
+utils/__pycache__

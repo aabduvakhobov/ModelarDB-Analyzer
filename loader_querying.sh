@@ -1,9 +1,7 @@
 #!/bin/bash
 
 # Configuration
-ERROR=($2)
-
-CORRS=(0.0)
+ERROR=$2
 
 #DB=cassandra
 DB=file
@@ -21,15 +19,10 @@ else
 fi
 MEMORY=$(python3 -c "from math import ceil; print(int(ceil($MEMFRAC * ($(awk '/MemTotal/ {print $2}' /proc/meminfo) / 1024 / 1024))))")G
 
-
-
-# Main Function
-mkdir $COPY_DB_PATH
+# Main part
 cd $MODELARDB_PATH
-# this is contentious line of code...
-rm -r $COPY_DB_PATH/*
 # Ingest the data set with the correlation specified in corrs
-echo "Ingesting Dataset with: $e"
+echo "Ingesting Dataset with: $ERROR"
+sed -i -e "s/error_bound\s[0-9\.?0-9]\+/error_bound $ERROR/g" $CONF_PATH
+# start ModelarDB with query interface
 SBT_OPTS="-Xmx$MEMORY -Xms$MEMORY" sbt "run $CONF_PATH" 2> /dev/null #| tee $HOME/Downloads/output-"$e"-"$c"
-#echo 'dk.aau.modelardb.Main.main(Array())' | ~/Programs/spark-3.1.1-bin-hadoop3.2/bin/spark-shell --driver-memory $MEMORY --executor-memory $MEMORY --packages com.datastax.spark:spark-cassandra-connector_2.12:3.0.1 --jars ModelarDB-assembly-1.0.0.jar | tee $HOME/Downloads/output-"$e"-"$c"
-# cd to verifier and tee the result and cd back to modelardb home

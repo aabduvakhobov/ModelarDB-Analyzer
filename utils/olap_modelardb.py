@@ -5,11 +5,17 @@ import time
 import sys
 import csv
 import os
+import configparser
+
+config = configparser.ConfigParser()
+config.read('config.cfg')
+
+SAVE_DIR = config['DEFAULT']['RESULTS_SAVE_PATH']
 
 
 DATASET = "WTM"
 MDB_VALUE_COLUMN_NAME = "location"
-    
+
 queries_per_tid_datapoint = {
     "COUNT" : "SELECT COUNT(*) FROM datapoint where tid={}",
     "SUM" : "SELECT SUM(value) FROM datapoint where tid={}",
@@ -81,7 +87,7 @@ def main(error_bound:float, modelardb_data_path:str, filter_out_not_zero:bool):
     csv_header = [
         'dataset', 'signal','error_bound', 'query', 'result', 'execution_time', 'datapoint_cnt'
         ]
-    csv_file_name = f"results-{error_bound}.csv"
+    csv_file_name = f"{SAVE_DIR}/results-{error_bound}.csv"
     # delete old csv file
     if os.path.exists(csv_file_name):
         os.remove(csv_file_name)
@@ -106,8 +112,9 @@ def main(error_bound:float, modelardb_data_path:str, filter_out_not_zero:bool):
     flight_client.close()
 
 if __name__ == "__main__":
+    
     if len(sys.argv) < 4:
-        raise SyntaxError("Insufficient arguments. Usage: Arg1: error_bound Arg2: /path/to/modelardb-data Arg3: filter_out_zero")
+        raise SyntaxError("Insufficient arguments. Usage: Arg1: error_bound Arg2: /path/to/modelardb-data Arg3: 0 or 1")
     else:
         error_bound = float(sys.argv[1])
         modelardb_data_path = sys.argv[2]

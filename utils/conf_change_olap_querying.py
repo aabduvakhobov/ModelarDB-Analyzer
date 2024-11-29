@@ -1,10 +1,16 @@
+"""
+This script modifies ModelarDB's config file to use the right 
+1) query engine
+2) data source to ingest
+3) dimension file
+4) sampling interval
+5) query interface
+"""
 import re
-import sys
+import configparser
 
-# CONF_PATH = sys.argv[1]
-# DIM_PATH = sys.argv[2]
-# DATA_PATH = sys.argv[3]
-# SAMPLING_INTERVAL = int(sys.argv[4])
+import conf_change
+
 
 def main(conf_path, *args):
    """
@@ -31,7 +37,7 @@ def main(conf_path, *args):
       elif k.endswith("engine"):
          lines = re.sub("engine\s.+", f"engine {w}", lines)
       elif k.endswith("interface"):
-         lines = lines + f'\nmodelardb.interface {w}'
+         lines = re.sub("interface\s.+", f"interface {w}", lines)
    # add save format type 
    if "modelardb.storage orc" not in lines:
          lines = lines + '\nmodelardb.storage orc:./modelardb'
@@ -43,12 +49,15 @@ def main(conf_path, *args):
        f.write(lines)
 
 
-if __name__ == "__main__": 
-   
-   # TODO: argparsing dynamic with keyword args
-   if len(sys.argv) < 3:
-      raise SyntaxError("Insufficient arguments.")
-   else:
-      main(sys.argv[1], *sys.argv[2:])   
-   
-        
+if __name__ == "__main__":
+    # read config file
+    config = configparser.ConfigParser()
+    config.read("config.cfg")
+    conf_change.main(
+        config['DEFAULT']['MODELARDB_PATH'] + '/modelardb.conf',
+        'engine=' + config['INGESTION']['PROCESSING_ENGINE'],
+        'dimensions=' + config['INGESTION']['DIMENSIONS_FILE'],
+        'source=' + config['INGESTION']['DATA_PATH'],
+        'interval=' + config['INGESTION']['SAMPLING_INTERVAL'],
+        'interface=' + config['OLAP_QUERIES']['INTERFACE']
+    )
