@@ -1,0 +1,12 @@
+location, location string
+
+active_power.orc, active_power
+cor._nacelle_direction.orc, cor._nacelle_direction
+cor._wind_direction.orc, cor._wind_direction
+cos_nacelle_dir.orc, cos_nacelle_dir
+cos_wind_dir.orc, cos_wind_dir
+pitch_angle.orc, pitch_angle
+rotor_speed.orc, rotor_speed
+sin_nacelle_dir.orc, sin_nacelle_dir
+sin_wind_dir.orc, sin_wind_dir
+wind_speed.orc, wind_speed
