@@ -6,11 +6,12 @@ This directory contains bash script and python scripts for performing the experi
 
 ## IoTDB Installation
 - Check IoTDB v1.3.1 installation [instructions](https://iotdb.apache.org/UserGuide/V1.3.0-2/QuickStart/QuickStart_apache.html)
-- set up conda virtual environment using `requirements.txt` file in the project root
 
 ## Instructions to run
-- set `IoTDB_HOME` environment variable in your path that points to IoTDB installation directory
-- run: `python3 run_ingest_olap_wtm.py`*
+
+- Create conda virtual environment using [requirements.txt](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/requirements.txt) file in the project root (if not already created)
+- Set `IoTDB_HOME` environment variable in your path that points to IoTDB installation directory
+- Run: `python3 run_ingest_olap_wtm.py`*
 
 *This python script is configured to be run with the only open dataset WTM. However, the code that was used for the other datasets can also be checked from the bash and python scripts in the directory.  
 

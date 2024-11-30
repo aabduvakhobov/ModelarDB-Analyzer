@@ -12,7 +12,7 @@ def run_script(modelardb_path, error_bound, verifier_path, output_path):
     subprocess.run(
         [
             "bash", 
-            "loader-modelardb.sh", 
+            "loader_modelardb.sh", 
             f"{modelardb_path}", 
             f"{error_bound}", 
             f"{verifier_path}", 

@@ -3,9 +3,10 @@
 This directory includes scripts for computing aggregates (i.e., downsampling) for the WTM dataset and evaluating the OLAP query results from computed aggregates.
 ## Prerequites
 - Conda package manager
-## Installation
-- Go to project root and create conda environment with requirements.txt file: `conda create --name <env> --file requirements.txt`
+
 ## Instructions to run
+- Go to project root and create conda environment with [requirements.txt](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/requirements.txt) file (if not already created): `conda create --name <my_env> --file requirements.txt`
+- Activate the new conda environment: `conda activate <my_env>`
 - Change to AGG-Experiments directory: `cd Baselines/AGG-Experiments` 
 - Run _main.py_ with: `python3 main.py`
 
