@@ -37,9 +37,9 @@ ModelarDB is configured using a configuration file (i.e., *modelardb.conf*). In 
 ### Evaluate Compression Effectiveness and Mean Absolute Percentage Error (MAPE)
 
 Use ModelarDB Analyzer to evaluate ModelarDB's compression effectiveness and MAPE from its lossy compression:
-- Change to ModelarDB: `cd ModelarDB`
-- To add extended logging to ModelarDB, apply the [git patch file](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/patches/ModelarDB-Extended-Logging.patch) in the [patches](https://github.com/aabduvakhobov/ModelarDB-Analyzer/tree/main/patches) directory with: `git apply ../patches/ModelarDB-Extended-Logging.patch`
-- Run [main.py](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/main.py): `python3 main.py`
+1. Change to ModelarDB: `cd ModelarDB`
+2. To add extended logging to ModelarDB, apply the [git patch file](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/patches/ModelarDB-Extended-Logging.patch) in the [patches](https://github.com/aabduvakhobov/ModelarDB-Analyzer/tree/main/patches) directory with: `git apply ../patches/ModelarDB-Extended-Logging.patch`
+3. Run [main.py](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/main.py): `python3 main.py`
 
 Please note that configurations in [config.cfg](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/config.cfg) are tuned for WTM and thus you are not required to change them when testing with WTM.
 

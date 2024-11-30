@@ -5,10 +5,10 @@ This directory includes scripts for computing aggregates (i.e., downsampling) fo
 - Conda package manager
 
 ## Run
-- Change to project root and create conda environment with [requirements.txt](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/requirements.txt) file (if not already created): `conda create --name <my_env> --file requirements.txt`
-- Activate the new conda environment: `conda activate <my_env>`
-- Change to [AGG-experiments](Baselines/AGG-experiments) directory. 
-- Run _main.py_ with: `python3 main.py`
+1. Change to project root and create conda environment with [requirements.txt](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/requirements.txt) file (if not already created): `conda create --name <my_env> --file requirements.txt`
+2. Activate the new conda environment: `conda activate <my_env>`
+3. Change to [AGG-experiments](Baselines/AGG-experiments) directory. 
+4. Run _main.py_ with: `python3 main.py`
 
 ## Experiment Outputs
 `main.py` creates a new directory `aggregates` that stores all computed aggregates using the sampling intervals used in the paper and directory `OLAP_query_results` for storing the evaluation results of OLAP queries. Evaluation results for OLAP queries are given in two types: aggregated results (i.e., information similar to Table 4) and full version (i.e., query result for each signal, query type and sampling interval).
