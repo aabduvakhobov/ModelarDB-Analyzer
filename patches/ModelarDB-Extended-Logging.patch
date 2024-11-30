@@ -48,10 +48,10 @@ index 3381e8b..7d06914 100644
          sb.append("\nFinalized Segment DataPoint Counter - Total: ").append(finalizedCounter).append('\n');
 +        if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.PMC_MeanModelType")){
 +            sb.append("-- ").append("dk.aau.modelardb.core.models.PMC_MeanModelType").append(" | DataPoint: ").append("0").append('\n');
-+        } 
++        }
 +        if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.SwingFilterModelType")){
 +            sb.append("-- ").append("dk.aau.modelardb.core.models.SwingFilterModelType").append(" | DataPoint: ").append("0").append('\n');
-+        } 
++        }
 +        if (!this.finalizedDataPointCounter.containsKey("dk.aau.modelardb.core.models.FacebookGorillaModelType")){
 +            sb.append("-- ").append("dk.aau.modelardb.core.models.FacebookGorillaModelType").append(" | DataPoint: ").append("0").append('\n');
 +        }
