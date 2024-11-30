@@ -8,14 +8,38 @@ import pyarrow.compute as pc
 import csv
 import time
 import sys
+import configparser
+
+
+config = configparser.ConfigParser()
+config.read('../../config.cfg')
 
 
 # ENV Vars
-PCD_UNIVARIATE_PATH = '/path/to/save/dataset'
-IOTDB_SELECT_ALL_QUERIES = {"PCD": "SELECT {} FROM root.engie.powerlog", "MTD": ""}
+PCD_UNIVARIATE_PATH = '../../' + config['DATA']['WTM_UNIVARIATE']
+DEVICE_ID = config['IOTDB']['DEVICE_ID']
+OUTPUTS = config['IOTDB']['OUTPUT_DIR']
+IOTDB_SELECT_ALL_QUERIES = {
+    "WTM": "SELECT {} FROM " + DEVICE_ID,
+    "PCD": "SELECT {} FROM " + DEVICE_ID, 
+    "MTD": "SELECT {} FROM " + DEVICE_ID,
+    }
 
 # names of PCD dataset cols cannot be disclosed as per NDA
-PCD_columns = ['']
+WTM_columns = [
+    'wind_speed', 'pitch_angle', 'rotor_speed', 'active_power',
+    'cos_nacelle_dir', 'sin_nacelle_dir', 'cos_wind_dir', 'sin_wind_dir',
+    'cor_nacelle_direction', 'cor_wind_direction'
+    ]
+
+def get_files(path):
+    import os
+    file_list = []
+    for _, _, files in os.walk(path):
+        for file in files:
+            file_list.append(file)
+    return file_list
+        
 
 def create_iotdb_session():
     ip = "127.0.0.1"
@@ -44,6 +68,10 @@ def compute_mape(x):
     # mean must be performed after all errors are computed for all columns
     mape = np.mean(x)
     return mape
+
+
+def correct_measurement_name(measurement_name):
+    return measurement_name.replace(".orc", "").replace(".", "")
 
 
 def compute_iotdb_mape(col, raw_dataset, iotdb_dataset ):
@@ -132,43 +160,49 @@ def compute_max_min_median_rqe(results_dict, query):
 if __name__ == "__main__":
     if len(sys.argv) < 7:
         raise Exception("Usage: script.py test_type dataset encoding precision higher_than_zero")
-    
+
     test_type = sys.argv[1]
     dataset_name = sys.argv[2]
     encoding = sys.argv[3]
     precision = sys.argv[4]
-    higher_than_zero = bool(sys.argv[5])
+    higher_than_zero = bool(int(sys.argv[5]))
     exclude_queries = sys.argv[6:]
-    
+
     QUERIES = ["MIN", "MAX", "AVG", "MEDIAN", "STD", "SUM"]
     if test_type == "mape":
         header = ["dataset_name", "encoding", "precision", "mape", "max_absolute_error", "inf_count",]
     elif test_type == "query_error":
         header = ["dataset_name", "encoding", "precision", "query", "rqe_min", "rqe_max", "rqe_median", 'nan_cnt']
 
-    save_file = f"{test_type}-{dataset_name}-{encoding}-{precision}-metrics.csv"
+    save_file = f"{OUTPUTS}/{test_type}-{dataset_name}-{encoding}-{precision}-metrics.csv"
     with open(save_file, "w") as f:
         writer = csv.writer(f)
         writer.writerow(header)    
-    
+
     session = create_iotdb_session()    
     # start = time.perf_counter()
     results_dict = {}
     errors = np.array([])
     max_errors = []
     inf_cnts = 0
-    for col in PCD_columns:
-        raw_dataset = orc.read_table(PCD_UNIVARIATE_PATH + '/{}.orc'.format(col) ).to_pandas()
-        measurement_name = col.replace(".orc", '')
-        iotdb_dataset = session.execute_query_statement(IOTDB_SELECT_ALL_QUERIES[dataset_name].format(col)).todf()
+    wtm_files = get_files(PCD_UNIVARIATE_PATH)
+    for wtm_file in wtm_files:
+        raw_dataset = orc.read_table(PCD_UNIVARIATE_PATH + '/'+ wtm_file).to_pandas()
+        measurement_name = correct_measurement_name(wtm_file)
+        # fetch all data from IoTDB
+        print()
+        iotdb_dataset = session.execute_query_statement(IOTDB_SELECT_ALL_QUERIES[dataset_name].format(measurement_name)).todf()
         if test_type == "mape":
-            real_errors, inf_cnt = compute_iotdb_mape(col, raw_dataset, iotdb_dataset )
+            real_errors, inf_cnt = compute_iotdb_mape(wtm_file, raw_dataset, iotdb_dataset )
             errors = np.concatenate( [errors, real_errors] )
             max_errors.append(np.max(real_errors))      
             inf_cnts += inf_cnt  
         elif test_type == 'query_error':
-            results_dict[col] = compute_query_errors(raw_dataset, iotdb_dataset, QUERIES, higher_than_zero, exclude_queries)
-            
+            print('raw data first')
+            print(raw_dataset.shape)
+            print(iotdb_dataset.shape)
+            results_dict[wtm_file] = compute_query_errors(raw_dataset, iotdb_dataset, QUERIES, higher_than_zero, exclude_queries)
+
     for query in QUERIES:
         rqe_min, rqe_max, rqe_median, nan_cnt = compute_max_min_median_rqe(results_dict, query)
         row = [dataset_name, encoding, precision, query, rqe_min, rqe_max, rqe_median, nan_cnt]
@@ -183,5 +217,4 @@ if __name__ == "__main__":
 
     # wrute extended results if there is data in dict
     if len(results_dict.items()) > 0:
-        pd.DataFrame(results_dict).to_csv(f"{dataset_name}_{encoding}_{precision}_extended_rqe.csv")
-    
+        pd.DataFrame(results_dict).to_csv(f"{OUTPUTS}/{dataset_name}_{encoding}_{precision}_extended_rqe.csv")

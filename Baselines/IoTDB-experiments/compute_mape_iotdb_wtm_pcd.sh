@@ -3,15 +3,15 @@
 # Exit when any command fails
 set -e
 
-encodings="TS_2DIFF"
-precision_values="1 2 3 4 5 6"
-
-save_path='/path/to/save/results'
+encodings=$1
+precision_values=$2
+iotdb_database=$3
+output_dir=$4
 
 test_type="query_error" # options: mape or query_error
-# Can be used with both PCD and WTM datasets
+# These parameters are hardcoded since we cannot share other datasets
 dataset_name="WTM"
-higher_than_zero="False"
+higher_than_zero="1"
 exclude_queries='None'
 
 
@@ -24,7 +24,7 @@ do
         sed -i -e "s/.*default_float_encoding=.*/default_float_encoding=$encoding/" $IoTDB_HOME/conf/iotdb-common.properties
         sed -i -e "s/.*default_double_encoding=.*/default_double_encoding=$encoding/" $IoTDB_HOME/conf/iotdb-common.properties
 
-        save_dir=$save_path/$encoding-$precision
+        save_dir=$iotdb_database/$encoding-$precision
         # remove datasets
         if [ -d $IoTDB_HOME/data ]
         then
@@ -35,12 +35,12 @@ do
         # 
         bash $IoTDB_HOME/sbin/start-standalone.sh
         sleep 5
-        # timing ingestion process
+        # timing query processing
         start=$SECONDS
-        python3 iotdb_mape_pcd.py "$test_type" "PCD" "$encoding" "$precision" "$higher_than_zero" "$exclude_queries" >> $encoding-$precision-MAPE.log
+        python3 iotdb_mape_wtm_pcd.py "$test_type" $dataset_name "$encoding" "$precision" "$higher_than_zero" "$exclude_queries" >> $output_dir/$encoding-$precision-MAPE.log
         duration=$((SECONDS-start))
         # write results of the python program logs to the common file
-        echo "All processed in $duration seconds" >> $encoding-$precision-MAPE.log
+        echo "All processed in $duration seconds" >> $output_dir/$encoding-$precision-MAPE.log
         bash $IoTDB_HOME/sbin/stop-standalone.sh
         sleep 10
     done

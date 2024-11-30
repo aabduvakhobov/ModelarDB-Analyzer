@@ -18,3 +18,5 @@ modelardb/
 modelardb_data/
 utils/__pycache__
 Baselines/AGG-Utilities/__pycache__/
+Baselines/IoTDB-experiments/outputs/
+Baselines/IoTDB-experiments/iotdb_data/

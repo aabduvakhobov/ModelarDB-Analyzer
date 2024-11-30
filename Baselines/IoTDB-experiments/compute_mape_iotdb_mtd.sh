@@ -4,7 +4,7 @@
 set -e
 
 encodings="TS_2DIFF"
-precision_values="1 2 3 4 5"
+precision_values="1 2"
 test_type="query_error_min_std_median"
 # time to sleep for vacuum
 save_path='/path/to/save/results'
