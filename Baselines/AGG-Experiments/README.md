@@ -2,10 +2,11 @@
 
 This directory includes scripts for computing aggregates (i.e., downsampling) for the WTM dataset and evaluating the OLAP query results from computed aggregates.
 ## Prerequites
-- conda package manager
+- Conda package manager
 ## Installation
-- Change to project root and create conda environment with requirements.txt file: `conda create --name <env> --file requirements.txt`
+- Go to project root and create conda environment with requirements.txt file: `conda create --name <env> --file requirements.txt`
 ## Instructions to run
+- Change to AGG-Experiments directory: `cd Baselines/AGG-Experiments` 
 - Run _main.py_ with: `python3 main.py`
 
 ## Output explanation

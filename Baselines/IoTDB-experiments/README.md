@@ -1,5 +1,5 @@
 # IoTDB experiments
-This directory contains bash script and python scripts for performing the experiments (data ingestion - Section 5.1, OLAP query processing - Section 5.3.2) with IoTDB using public WTM dataset. Also the code for the transfer efficiency experiment (Section 5.2) is included. Please note that the transfer efficiency experiment was performed using PCD dataset and thus its results cannot be reproduced.
+This directory contains bash script and python scripts for performing the experiments (data ingestion - Section 5.1, OLAP query processing - Section 5.3.2) with IoTDB using public WTM dataset. Also the code for the transfer efficiency experiment (Section 5.2) is [included](https://github.com/aabduvakhobov/ModelarDB-Analyzer/tree/main/Baselines/IoTDB-experiments/IoTB-Ingest-Transfer-Edge). Please note that the transfer efficiency experiment was performed using PCD dataset and thus its results cannot be reproduced.
 ## Prerequites
 - IoTDB version v1.3.1
 - conda package manager
@@ -15,4 +15,4 @@ This directory contains bash script and python scripts for performing the experi
 *This python script is configured to be run with the only open dataset WTM. However, the code that was used for the other datasets can also be checked from the bash and python scripts in the directory.  
 
 ## Experiment outputs
-The results are stored in `outputs` directory and they contain information about ingestion logs including the size of the dataset as well as OLAP query results for each given precision limit for IoTDB's lossy compression method TS_DIFF.
+The results are stored in `outputs` directory and they contain information about ingestion logs including the size of the IoTDB database as well as OLAP query results for each given precision limit for IoTDB's lossy compression method TS_DIFF.
