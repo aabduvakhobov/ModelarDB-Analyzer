@@ -41,12 +41,14 @@ Please note that configurations in [config.cfg](https://github.com/aabduvakhobov
 
 
 ### Evaluate OLAP queries in ModelarDB:
-  1. Change to the project root
-  2. Run loader_querying.sh: `./loader_querying.sh`. The default configurations will ingest the WTM dataset and start ModelarDB with [Apache Arrow Flight](https://arrow.apache.org/blog/2019/10/13/introducing-arrow-flight/) query interface
-  3. On a separate terminal window run: `python3 run_olap_queries.py`
+  1. Run `git restore .` in *ModelarDB* directory
+  2. Change to the project root: `cd ..`
+  2. Run `python3 utils/conf_change_olap_querying.py`
+  3. Run *loader_querying.sh* with a path to ModelarDB and error bound as an argument like: `./loader_querying.sh ModelarDB/ 0.0`. ModelarDB will start the ingestion of the WTM dataset and open the query interface using [Apache Arrow Flight](https://arrow.apache.org/blog/2019/10/13/introducing-arrow-flight/) at *localhost:9999*
+  4. On a separate terminal window run: `python3 run_olap_queries.py`
 
 ### ModelarDB in the edge-to-cloud scenario: 
-  Transfer efficiency experiments were only performed with the highest frequency, closed dataset PCD. We followed instructions specified in ModelarDB's [user manual]().
+  Transfer efficiency experiments were only performed with the highest frequency, closed dataset PCD. We followed instructions specified in ModelarDB's [user manual](https://github.com/ModelarData/ModelarDB/blob/main/docs/index.md#user-manual) and configuration file.
 
 Other hints:
 

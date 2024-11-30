@@ -10,6 +10,12 @@ current_dir=$(pwd)
 MODELARDB_PATH=$current_dir/$1
 CONF_PATH=$MODELARDB_PATH/modelardb.conf
 
+if [ -z $1  ] || [ -z $ERROR ]
+then
+    echo "Usage: script.sh /path/to/ModelarDB error_bound"
+    exit 0
+fi
+
 # also include OUTPUT_PATH
 if [[ $DB == cassandra ]]
 then
