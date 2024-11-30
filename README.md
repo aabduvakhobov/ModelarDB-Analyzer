@@ -1,13 +1,17 @@
-# ModelarDB Analyzer for multi-model Error-Bounded Lossy and Lossless Compression
-This repository contains code for the research paper "Scalable Model-Based Management of Massive High Frequency Wind Turbine Data with ModelarDB" by Abduvakhobov et al. submitted to PVLDB Volume 17. 
+# ModelarDB Analyzer
+This repository contains the code for the PVLDB paper: "Scalable Model-Based Management of Massive High Frequency Wind Turbine Data with ModelarDB"
 
-Modelar-Analyzer is a Python program developed for analyzing the performance of error-bounded lossy and lossless compression using ModelarDB TSMS. We use [ModelarDB's JVM-based implementation](https://github.com/modelardata/modelardb) in our evaluation.
+Abduvoris Abduvakhobov, Søren Kejser Jensen, Torben Bach Pedersen, and Christian Thomsen 
+
+Modelar Analyzer is a Python program developed for analyzing the compression effectiveness and compressed data quality from ModelarDB TSMS's error-bounded lossy and lossless compression. We use [ModelarDB's JVM-based implementation](https://github.com/modelardata/modelardb) in our evaluation.
 
 Experiments can be performed with the public [WTM](https://github.com/cmcuza/EvalImpLSTS/tree/main/data/raw/Wind) dataset that can also be found in [data/](https://github.com/aabduvakhobov/ModelarDB-Analyzer/tree/main/data) directory in different formats and structures (i.e., as univariate and multivariate time series).
 
 
 ## Prerequites
-- Java Development Kit for ModelarDB (OpenJDK 11 and Oracle's Java SE Development Kit 11 have been tested)
+- Java Development Kit for ModelarDB. The following were tested:
+  -  OpenJDK 11 
+  -  Oracle's Java SE Development Kit 11
 - Scala Build Tool (sbt)
 - Conda package manager
 
