@@ -22,15 +22,16 @@ def run_script(modelardb_path, error_bound, verifier_path, output_path):
 
 
 if __name__ == '__main__':
-    # creates sqlite database to store fetched data
-    db = MyDB("./output.db") # TODO: uncomment
-    conn = db.create_connection()
-    db.create_table(conn, delete=True)
-    db.create_table(conn)
     # read config file
     config = configparser.ConfigParser()
     config.read("config.cfg")
     
+    # creates sqlite database to store evaluation results
+    db = MyDB("./" + config['DEFAULT']['RESULTS_SAVE_PATH'] +  "/output.db")
+    conn = db.create_connection()
+    db.create_table(conn, delete=True)
+    db.create_table(conn)
+
     # change ModelarDB's configuration
     conf_change.main(
         config['DEFAULT']['MODELARDB_PATH'] + '/modelardb.conf',

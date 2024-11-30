@@ -33,7 +33,7 @@ ModelarDB is configured using a configuration file (i.e., `modelardb.conf`). In 
 ### Evaluate ModelarDB's compression effectiveness and Mean Absolute Percentage Error (MAPE) from its lossy compression
 
 Use **ModelarDB Analyzer** to evaluate ModelarDB's compression effectiveness and MAPE from its lossy compression:
-- Change directory to Modelardb: `cd modelardb`
+- Change directory to Modelardb: `cd ModelarDB`
 - To add extended logging to ModelarDB, apply the [git patch file](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/patches/ModelarDB-Extended-Logging.patch) in the [patches](https://github.com/aabduvakhobov/ModelarDB-Analyzer/tree/main/patches) directory with: `git apply ../patches/ModelarDB-Extended-Logging.patch`
 - Run [main.py](https://github.com/aabduvakhobov/ModelarDB-Analyzer/blob/main/main.py): `python3 main.py`
 
