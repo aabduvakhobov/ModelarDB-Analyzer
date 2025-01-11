@@ -7,6 +7,12 @@ Modelar Analyzer is a Python program developed for analyzing the compression eff
 
 Experiments can be performed with the public [WTM](https://github.com/cmcuza/EvalImpLSTS/tree/main/data/raw/Wind) dataset that can also be found in [data/](https://github.com/aabduvakhobov/ModelarDB-Analyzer/tree/main/data) directory in different formats and structures (i.e., as univariate and multivariate time series).
 
+## Paper
+
+***Scalable Model-Based Management of Massive High Frequency Wind Turbine Data with ModelarDB***
+by Abduvoris Abduvakhobov, Søren Kejser Jensen, Torben Bach Pedersen, and Christian Thomsen
+in *The Proceedings of the VLDB Endowment, 17(13): 4723-4732, 2024*  
+Links: [PVLDB](https://www.vldb.org/pvldb/vol17/p4723-abduvakhobov.pdf)
 
 ## Prerequites
 - Java Development Kit for ModelarDB. The following were tested:
@@ -73,4 +79,4 @@ The default configurations for both methods use the available public dataset [WT
 ## License
 The code is licensed under version 2.0 of the Apache License and a copy of the license is bundled with the program.
 
-The code uses components from [ModelarDB](https://github.com/ModelarData/ModelarDB) which is released under version 2.0 of the Apache License..
+The code uses components from [ModelarDB](https://github.com/ModelarData/ModelarDB) which is released under version 2.0 of the Apache License.
