@@ -1,5 +1,5 @@
 # ModelarDB Analyzer
-This repository contains the code for the PVLDB paper: "Scalable Model-Based Management of Massive High Frequency Wind Turbine Data with ModelarDB"
+This repository contains the code for the PVLDB paper: ["Scalable Model-Based Management of Massive High Frequency Wind Turbine Data with ModelarDB"](https://www.vldb.org/pvldb/vol17/p4723-abduvakhobov.pdf)
 
 Abduvoris Abduvakhobov, Søren Kejser Jensen, Torben Bach Pedersen, and Christian Thomsen 
 
